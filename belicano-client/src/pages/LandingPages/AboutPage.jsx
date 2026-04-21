@@ -1,13 +1,15 @@
 import Button from '../../components/Button';
 import logo from '../../assets/img/nubdexchange_logo.png';
+import banner from '../../assets/img/nu_bulldogex_banner.jpg';
+import products from '../../assets/product-content.js';
 
 const AboutPage = () => {
   return (
     <div className="flex w-full flex-col gap-6">
       <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-          <div className="rounded-3xl border-2 border-dashed border-zinc-300 bg-zinc-100 p-6">
-            <div className="flex min-h-72 items-center justify-center rounded-[1.25rem] bg-zinc-200">
+          <div className="rounded-3xl overflow-hidden" style={{ backgroundImage: `url(${banner})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            <div className="flex min-h-72 items-center justify-center">
               <img src={logo} alt="BulldogEx" className="h-32 w-32 rounded-full border-2 border-zinc-900 bg-zinc-50 object-contain" />
             </div>
           </div>
@@ -17,11 +19,10 @@ const AboutPage = () => {
               About Store
             </p>
             <h1 className="max-w-xl text-3xl font-bold leading-tight text-zinc-900 sm:text-4xl">
-              A campus shop focused on useful products and simple ordering.
+              Student essentials, Bulldog pride, zero hassle.
             </h1>
             <p className="mt-4 max-w-lg text-sm leading-7 text-zinc-600 sm:text-base">
-              BulldogEx Shop keeps the low-fidelity layout system while presenting clear
-              product categories, quick actions, and straightforward store information.
+              BulldogEx is your go-to campus marketplace for uniforms, study gear, and school merch. Built for busy students—quick browsing, transparent pricing, and convenient pickup slots that fit your schedule.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button to="/" variant="primary">
@@ -79,23 +80,23 @@ const AboutPage = () => {
 
             <div className="mt-6 space-y-4">
               <article className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-                <h3 className="text-lg font-semibold text-zinc-900">Curated Catalog</h3>
+                <h3 className="text-lg font-semibold text-zinc-900">Smart Catalog</h3>
                 <p className="mt-3 text-sm leading-6 text-zinc-600">
-                  Products are grouped by daily need so shoppers can scan faster.
+                  Browse by what you need—apparel, essentials, or study supplies. No clutter, just what matters.
                 </p>
               </article>
 
               <article className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-                <h3 className="text-lg font-semibold text-zinc-900">Simple Checkout</h3>
+                <h3 className="text-lg font-semibold text-zinc-900">Fast Checkout</h3>
                 <p className="mt-3 text-sm leading-6 text-zinc-600">
-                  Product pages keep price, stock, and action buttons easy to find.
+                  Clear pricing, stock status, and quick actions. Order in seconds, not minutes.
                 </p>
               </article>
 
               <article className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-                <h3 className="text-lg font-semibold text-zinc-900">Pickup Ready</h3>
+                <h3 className="text-lg font-semibold text-zinc-900">Pickup Slots</h3>
                 <p className="mt-3 text-sm leading-6 text-zinc-600">
-                  Store information stays direct for students who need quick order updates.
+                  Choose a time that works for you. Real-time order updates keep you in the loop.
                 </p>
               </article>
             </div>
@@ -106,17 +107,17 @@ const AboutPage = () => {
               Category Grid
             </p>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200">
-                <div className="h-12 w-12 border-2 border-zinc-300 bg-zinc-100" />
+              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
+                <img src={products[0].image} alt={products[0].title} className="h-full w-full object-cover" />
               </div>
-              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200">
-                <div className="h-12 w-12 border-2 border-zinc-300 bg-zinc-100" />
+              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
+                <img src={products[1].image} alt={products[1].title} className="h-full w-full object-cover" />
               </div>
-              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200">
-                <div className="h-12 w-12 border-2 border-zinc-300 bg-zinc-100" />
+              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
+                <img src={products[2].image} alt={products[2].title} className="h-full w-full object-cover" />
               </div>
-              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200">
-                <div className="h-12 w-12 border-2 border-zinc-300 bg-zinc-100" />
+              <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
+                <img src={products[3].image} alt={products[3].title} className="h-full w-full object-cover" />
               </div>
             </div>
             <Button to="/products" className="mt-5">View Products</Button>

@@ -1,50 +1,65 @@
-import Button from '../components/Button';
+import Button from "../components/Button";
 
 const NotFoundPage = () => {
+  const navItems = [
+    { href: "/", label: "Home", description: "Back to the homepage" },
+    {
+      href: "/products",
+      label: "Products",
+      description: "Browse all store items",
+    },
+  ];
+
   return (
-    <div className="flex w-full flex-col gap-6">
-      <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div className="max-w-3xl">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-            Error
-          </p>
-          <h1 className="text-6xl font-bold leading-tight text-zinc-900 sm:text-7xl">
-            404
-          </h1>
-          <p className="mt-4 text-lg leading-7 text-zinc-600">
-            Page not found. The page you're looking for doesn't exist or has been moved.
-          </p>
-          <div className="mt-6 flex gap-3">
-            <Button to="/">Back Home</Button>
-            <Button to="/products">View Products</Button>
-          </div>
-        </div>
-      </section>
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-8">
+      <div className="w-full max-w-3xl">
+        <div className="rounded-2xl border-2 border-black bg-gradient-to-br from-white to-blue-50 p-8 sm:p-12 shadow-lg">
+          <div className="text-center mb-10">
+            <div className="mb-6 inline-flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-blue-900 to-blue-950 border-4 border-yellow-500 shadow-lg">
+              <span className="text-6xl font-black text-white">404</span>
+            </div>
 
-      <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div className="max-w-3xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-            Quick Links
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-zinc-900">Explore the site</h2>
-          
-          <div className="mt-6 space-y-3">
-            <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-4">
-              <h3 className="font-semibold text-zinc-900">Home</h3>
-              <p className="mt-1 text-sm text-zinc-600">Return to the homepage</p>
-              <Button to="/" className="mt-3">Go Home</Button>
-            </div>
-            
-            <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-4">
-              <h3 className="font-semibold text-zinc-900">Products</h3>
-              <p className="mt-1 text-sm text-zinc-600">Browse all featured store items</p>
-              <Button to="/products" className="mt-3">View Products</Button>
-            </div>
+            <p className="text-xs font-bold uppercase tracking-widest text-yellow-600 mb-3">
+              Page Not Found
+            </p>
+
+            <h1 className="text-4xl sm:text-5xl font-black text-blue-950 mb-4">
+              Page Not Found
+            </h1>
+
+            <p className="text-base text-gray-700 max-w-md mx-auto mb-8">
+              The page you're looking for doesn't exist or has been moved. Let's
+              get you back on track with one of these options.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {navItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="group relative rounded-xl border-2 border-black bg-white p-6 transition-all duration-300 hover:shadow-xl hover:border-yellow-500 hover:bg-gradient-to-br hover:from-white hover:to-yellow-50 overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 h-24 w-24 bg-gradient-to-bl from-yellow-400 to-transparent opacity-0 group-hover:opacity-10 rounded-bl-full transition-opacity duration-300"></div>
+
+                <div className="relative z-10">
+                  <h3 className="text-lg font-black text-blue-950 group-hover:text-yellow-600 transition-colors">
+                    {item.label}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-600 group-hover:text-gray-700">
+                    {item.description}
+                  </p>
+                  <p className="mt-4 text-sm font-bold text-black group-hover:translate-x-2 transition-transform duration-300 inline-flex items-center">
+                    Explore →
+                  </p>
+                </div>
+              </a>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default NotFoundPage
+export default NotFoundPage;

@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
+@theme {
+  --font-verdana: "Verdana", sans-serif;
+}
+
 @layer base {
   body {
-    @apply bg-zinc-100 text-zinc-900 antialiased;
+    @apply font-verdana bg-zinc-100 text-zinc-900 antialiased;
   }
 
   #root {

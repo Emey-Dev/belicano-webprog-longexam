@@ -1,98 +1,115 @@
+import Prod1 from './img/Prod1.jpg';
+import Prod2 from './img/Prod2.jpg';
+import Prod3 from './img/Prod3.jpg';
+import Prod4 from './img/Prod4.jpg';
+import Prod5 from './img/Prod5.jpg';
+import Prod6 from './img/Prod6.jpg';
+import Prod7 from './img/Prod7.jpg';
+import Prod8 from './img/Prod8.jpg';
+
 const products = [
   {
-    name: 'campus-tote-bag',
-    title: 'Campus Tote Bag',
-    category: 'Bags',
-    price: 'PHP 499',
-    stock: 'In stock',
-    content: [
-      'A roomy everyday tote for books, gym clothes, chargers, and quick campus errands.',
-      'Made with thick canvas, reinforced handles, and a clean monochrome print.',
-      'Best for students who want one simple carry-all bag for class and after-class plans.',
-    ],
-  },
-  {
-    name: 'daily-notes-pack',
-    title: 'Daily Notes Pack',
-    category: 'Stationery',
-    price: 'PHP 249',
-    stock: 'In stock',
-    content: [
-      'A practical bundle of notebooks, sticky notes, and quick-label tabs for daily class work.',
-      'The set is light, compact, and easy to keep inside a backpack or locker.',
-      'Useful for lectures, reminders, project lists, and exam review schedules.',
-    ],
-  },
-  {
-    name: 'stainless-tumbler',
-    title: 'Stainless Tumbler',
-    category: 'Drinkware',
-    price: 'PHP 599',
-    stock: 'Low stock',
-    content: [
-      'A double-wall tumbler built for water, coffee, or tea during long school days.',
-      'The matte finish keeps the look simple while the lid helps reduce spills in your bag.',
-      'Fits most side pockets and keeps drinks ready between classes.',
-    ],
-  },
-  {
-    name: 'wireless-study-lamp',
-    title: 'Wireless Study Lamp',
-    category: 'Tech',
-    price: 'PHP 899',
-    stock: 'In stock',
-    content: [
-      'A compact rechargeable lamp for dorm desks, night study sessions, and small workspaces.',
-      'It has three brightness levels and a foldable body that stores neatly after use.',
-      'Good for reading, writing, and focused desk work without taking too much space.',
-    ],
-  },
-  {
-    name: 'hoodie-jacket',
-    title: 'Hoodie Jacket',
+    name: 'NU-shirt',
+    title: 'NU Shirt',
     category: 'Apparel',
-    price: 'PHP 1,199',
-    stock: 'Preorder',
-    content: [
-      'A soft everyday hoodie with a relaxed fit for classrooms, commute days, and weekends.',
-      'The heavy cotton blend keeps structure while staying comfortable for regular wear.',
-      'Available through preorder so sizes can be reserved before release.',
-    ],
-  },
-  {
-    name: 'desk-organizer-kit',
-    title: 'Desk Organizer Kit',
-    category: 'Workspace',
-    price: 'PHP 349',
-    stock: 'In stock',
-    content: [
-      'A small organizer set for pens, clips, cables, cards, and other desk essentials.',
-      'The modular pieces can be arranged based on your study area or dorm table.',
-      'Keeps daily tools visible without adding clutter.',
-    ],
-  },
-  {
-    name: 'id-lanyard-set',
-    title: 'ID Lanyard Set',
-    category: 'Accessories',
-    price: 'PHP 179',
-    stock: 'In stock',
-    content: [
-      'A durable lanyard and card holder set for IDs, access cards, and small passes.',
-      'The clip is easy to detach when scanning or presenting credentials.',
-      'Simple enough for daily use and sturdy enough for a full semester.',
-    ],
-  },
-  {
-    name: 'exam-week-care-pack',
-    title: 'Exam Week Care Pack',
-    category: 'Bundles',
     price: 'PHP 399',
     stock: 'In stock',
+    image: Prod1,
     content: [
-      'A compact bundle with snacks, tabs, pens, and quick notes for busy review weeks.',
-      'Packed for convenience so students can grab one kit and focus on studying.',
-      'Ideal as a personal prep item or a small gift for classmates.',
+      'The classic NU shirt for everyday campus wear.',
+      'Lightweight and breathable fabric built for long school days.',
+      'Available in standard sizing for a comfortable, relaxed fit.',
+    ],
+  },
+  {
+    name: 'NU-hoodie',
+    title: 'NU Hoodie',
+    category: 'Apparel',
+    price: 'PHP 1,199',
+    stock: 'In stock',
+    image: Prod2,
+    content: [
+      'A warm, comfortable hoodie for cooler days on campus.',
+      'Soft fleece interior with a sturdy outer layer that holds its shape.',
+      'Features the official NU logo embroidered on the chest.',
+    ],
+  },
+  {
+    name: 'NU-shirt-1900',
+    title: 'NU Shirt 1900',
+    category: 'Apparel',
+    price: 'PHP 499',
+    stock: 'Low stock',
+    image: Prod3,
+    content: [
+      'A commemorative shirt honoring NU\'s founding year.',
+      'Clean vintage-style print on durable cotton fabric.',
+      'A staple piece for students who take pride in NU heritage.',
+    ],
+  },
+  {
+    name: 'NU-shirt-bulldog',
+    title: 'NU Shirt Bulldog',
+    category: 'Apparel',
+    price: 'PHP 599',
+    stock: 'In stock',
+    image: Prod4,
+    content: [
+      'Show your Bulldog pride with this bold graphic tee.',
+      'Features the iconic NU Bulldog mascot printed on the front.',
+      'Great for game days, campus events, and everyday wear.',
+    ],
+  },
+  {
+    name: 'NU-shirt-v2',
+    title: 'NU Shirt V2',
+    category: 'Apparel',
+    price: 'PHP 399',
+    stock: 'Preorder',
+    image: Prod5,
+    content: [
+      'An updated take on the classic NU shirt with a refined fit.',
+      'Improved fabric blend for better comfort and durability.',
+      'Reserve your size now through preorder before stocks arrive.',
+    ],
+  },
+  {
+    name: 'NU-shirt-bulldog-v2',
+    title: 'NU Shirt Bulldog V2',
+    category: 'Apparel',
+    price: 'PHP 599',
+    stock: 'In stock',
+    image: Prod6,
+    content: [
+      'The Bulldog tee, now with an updated graphic and cleaner print.',
+      'Same bold mascot design with improved ink quality and fit.',
+      'Perfect for fans who want the latest version of an NU classic.',
+    ],
+  },
+  {
+    name: 'NU-shirt-1900-v2',
+    title: 'NU Shirt 1900 V2',
+    category: 'Apparel',
+    price: 'PHP 499',
+    stock: 'In stock',
+    image: Prod7,
+    content: [
+      'A refreshed version of the heritage 1900 shirt with updated type.',
+      'Same commemorative spirit, now with a modernized layout.',
+      'Pairs well with any campus outfit for a clean, proud look.',
+    ],
+  },
+  {
+    name: 'NU-shirt-volleyball',
+    title: 'NU Shirt Volleyball',
+    category: 'Apparel',
+    price: 'PHP 399',
+    stock: 'In stock',
+    image: Prod8,
+    content: [
+      'Support the NU Volleyball team with this official fan shirt.',
+      'Lightweight and breathable, ideal for cheering courtside.',
+      'Features team branding and the NU crest on the front.',
     ],
   },
 ];

@@ -1,7 +1,10 @@
 import Button from '../../components/Button';
 import banner from '../../assets/img/nu_bulldogex_banner.jpg';
+import products from '../../assets/product-content.js'; 
 
 const HomePage = () => {
+    const bestsellers = [products[1], products[2], products[7]];
+
     return (
         <div className="flex w-full flex-col gap-6">
             <section className="relative min-h-[28rem] overflow-hidden border-y-2 border-zinc-900 bg-zinc-900 px-4 py-10 sm:px-6 lg:px-8">
@@ -75,46 +78,30 @@ const HomePage = () => {
             <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
                 <div className="mb-6">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-                        Shop Sections
+                        Top Sales
                     </p>
-                    <h2 className="mt-2 text-2xl font-semibold text-zinc-900">Simple store cards</h2>
+                    <h2 className="mt-2 text-2xl font-semibold text-zinc-900">Best Sellers</h2>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                    <article className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-4">
-                        <div className="flex aspect-4/3 items-center justify-center rounded-[1.25rem] bg-zinc-200">
-                            <div className="h-12 w-12 border-2 border-zinc-300 bg-zinc-100" />
-                        </div>
-                        <h3 className="mt-4 text-lg font-semibold text-zinc-900">Daily Essentials</h3>
-                        <p className="mt-3 text-sm leading-6 text-zinc-600">
-                            Bags, tumblers, lanyards, and items used every school day.
-                        </p>
-                        <Button to="/products" className="mt-4" variant="primary">View Products</Button>
-                    </article>
-
-                    <article className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-4">
-                        <div className="flex aspect-4/3 items-center justify-center rounded-[1.25rem] bg-zinc-200">
-                            <div className="h-12 w-12 border-2 border-zinc-300 bg-zinc-100" />
-                        </div>
-                        <h3 className="mt-4 text-lg font-semibold text-zinc-900">Study Supplies</h3>
-                        <p className="mt-3 text-sm leading-6 text-zinc-600">
-                            Notes, desk tools, and study kits for class and review weeks.
-                        </p>
-                        <Button to="/products" className="mt-4" variant="primary">Shop Supplies</Button>
-                    </article>
-
-                    <article className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-4">
-                        <div className="flex aspect-4/3 items-center justify-center rounded-[1.25rem] bg-zinc-200">
-                            <div className="h-12 w-12 border-2 border-zinc-300 bg-zinc-100" />
-                        </div>
-                        <h3 className="mt-4 text-lg font-semibold text-zinc-900">Campus Apparel</h3>
-                        <p className="mt-3 text-sm leading-6 text-zinc-600">
-                            Comfortable pieces for class days, commute days, and weekends.
-                        </p>
-                        <Button to="/products" className="mt-4" variant="primary">
-                            View Apparel
-                        </Button>
-                    </article>
+                    {bestsellers.map((product) => (
+                        <article key={product.name} className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-4">
+                            <div className="flex aspect-4/3 items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
+                                <img 
+                                    src={product.image} 
+                                    alt={product.title}
+                                    className="h-full w-full object-cover"
+                                />
+                            </div>
+                            <h3 className="mt-4 text-lg font-semibold text-zinc-900">{product.title}</h3>
+                            <p className="mt-2 text-base font-bold text-zinc-900">{product.price}</p>
+                            <p className="mt-1 text-xs font-semibold text-zinc-500 uppercase">{product.stock}</p>
+                            <p className="mt-3 text-sm leading-6 text-zinc-600">
+                                {product.content[0]}
+                            </p>
+                            <Button to="/products" className="mt-4" variant="primary">Check Other Products</Button>
+                        </article>
+                    ))}
                 </div>
             </section>
         </div>

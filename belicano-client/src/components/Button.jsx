@@ -1,23 +1,27 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 const variantClasses = {
-  primary: 'bg-zinc-900 text-zinc-50 hover:bg-zinc-700',
-  secondary: 'bg-zinc-50 text-zinc-900 hover:bg-zinc-200',
+  primary: "bg-blue-950 text-white hover:bg-black hover:border-black",
+  secondary: "bg-white text-blue-950 hover:bg-gray-100 hover:border-blue-950",
 };
 
 const Button = ({
   children,
   to,
-  type = 'button',
-  variant = 'secondary',
-  className = '',
+  type = "button",
+  variant = "primary",
+  className = "",
 }) => {
+  const baseClasses =
+    "inline-flex items-center justify-center rounded-full border-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] transition duration-200 hover:-translate-y-0.5 hover:shadow-lg";
+
   const classes = [
-    'inline-flex items-center justify-center rounded-full border-2 border-zinc-900 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] transition',
-    variantClasses[variant] ?? variantClasses.secondary,
+    baseClasses,
+    "border-black",
+    variantClasses[variant] ?? variantClasses.primary,
     className,
   ]
-    .join(' ')
+    .join(" ")
     .trim();
 
   if (to) {
