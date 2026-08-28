@@ -12,17 +12,11 @@ const Footer = () => {
           </p>
         </div>
         <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-yellow-500 space-x-4">
-          <Link to="/" className="hover:text-yellow-300 transition">
-            Home
-          </Link>
-          <span>|</span>
-          <Link to="/about" className="hover:text-yellow-300 transition">
-            About
-          </Link>
           <span>|</span>
           <Link to="/auth/signup" className="hover:text-yellow-300 transition">
             Join us
           </Link>
+          <span>|</span>
         </div>
 
       </div>

@@ -1,9 +1,17 @@
+import { useEffect, useState } from 'react';
 import Button from '../../components/Button';
 import banner from '../../assets/img/nu_bulldogex_banner.jpg';
-import products from '../../assets/product-content.js'; 
+import products, { fetchProducts, resolveProductImage } from '../../assets/product-content.js';
 
 const HomePage = () => {
-    const bestsellers = [products[1], products[2], products[7]];
+    const [catalog, setCatalog] = useState(products);
+        const [stats, setStats] = useState({ products: 0, orderedItems: 0, reviewedItems: 0, activeUsers: 0 });
+    useEffect(() => {
+        fetchProducts().then(setCatalog).catch(() => setCatalog(products));
+            fetch(`${(import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "")}/stats`).then((response) => response.ok ? response.json() : Promise.reject()).then(setStats).catch(() => {});
+    }, []);
+    const activeProducts = catalog.filter((product) => product.isActive !== false);
+    const bestsellers = activeProducts.slice(0, 5);
 
     return (
         <div className="flex w-full flex-col gap-6">
@@ -49,27 +57,27 @@ const HomePage = () => {
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-                        <p className="text-2xl font-bold text-zinc-900">08</p>
+                            <p className="text-2xl font-bold text-zinc-900">{stats.products || activeProducts.length}</p>
                         <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
                             Products
                         </p>
                     </div>
                     <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-                        <p className="text-2xl font-bold text-zinc-900">06</p>
+                            <p className="text-2xl font-bold text-zinc-900">{stats.orderedItems}</p>
                         <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-                            Categories
+                            Ordered items
                         </p>
                     </div>
                     <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-                        <p className="text-2xl font-bold text-zinc-900">24</p>
+                            <p className="text-2xl font-bold text-zinc-900">{stats.reviewedItems}</p>
                         <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-                            Orders
+                            Reviewed items
                         </p>
                     </div>
                     <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-                        <p className="text-2xl font-bold text-zinc-900">03</p>
+                            <p className="text-2xl font-bold text-zinc-900">{stats.activeUsers}</p>
                         <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-                            Pickup Slots
+                            Active users
                         </p>
                     </div>
                 </div>
@@ -83,23 +91,23 @@ const HomePage = () => {
                     <h2 className="mt-2 text-2xl font-semibold text-zinc-900">Best Sellers</h2>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                     {bestsellers.map((product) => (
-                        <article key={product.name} className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-4">
-                            <div className="flex aspect-4/3 items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
+                        <article key={product.productSlug} className="flex h-full flex-col rounded-3xl border-2 border-zinc-900 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                            <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-white p-3">
                                 <img 
-                                    src={product.image} 
-                                    alt={product.title}
-                                    className="h-full w-full object-cover"
+                                    src={resolveProductImage(product.productImage)}
+                                    alt={product.productName}
+                                    className="h-full w-full object-contain"
                                 />
                             </div>
-                            <h3 className="mt-4 text-lg font-semibold text-zinc-900">{product.title}</h3>
-                            <p className="mt-2 text-base font-bold text-zinc-900">{product.price}</p>
-                            <p className="mt-1 text-xs font-semibold text-zinc-500 uppercase">{product.stock}</p>
-                            <p className="mt-3 text-sm leading-6 text-zinc-600">
-                                {product.content[0]}
+                            <h3 className="mt-4 min-h-14 text-lg font-semibold text-zinc-900">{product.productName}</h3>
+                            <p className="mt-2 text-base font-bold text-zinc-900">PHP {product.productPrice}</p>
+                            <p className="mt-1 text-xs font-semibold text-zinc-500 uppercase">{product.stockStatus}</p>
+                            <p className="mt-3 flex-1 text-sm leading-6 text-zinc-600">
+                                {product.productDescription}
                             </p>
-                            <Button to="/products" className="mt-4" variant="primary">Check Other Products</Button>
+                            <Button to={`/products/${product.productSlug}`} className="mt-5 w-full text-center" variant="primary">View Product</Button>
                         </article>
                     ))}
                 </div>

@@ -1,9 +1,17 @@
 import Button from '../../components/Button';
 import logo from '../../assets/img/nubdexchange_logo.png';
 import banner from '../../assets/img/nu_bulldogex_banner.jpg';
-import products from '../../assets/product-content.js';
+import products, { fetchProducts, resolveProductImage } from '../../assets/product-content.js';
+import { useEffect, useState } from 'react';
 
 const AboutPage = () => {
+  const [catalog, setCatalog] = useState(products);
+  const [stats, setStats] = useState({ products: 0, orderedItems: 0, reviewedItems: 0, activeUsers: 0 });
+  useEffect(() => {
+    fetchProducts().then(setCatalog).catch(() => setCatalog(products));
+    fetch(`${(import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "")}/stats`).then((response) => response.ok ? response.json() : Promise.reject()).then(setStats).catch(() => {});
+  }, []);
+  const activeProducts = catalog.filter((product) => product.isActive !== false);
   return (
     <div className="flex w-full flex-col gap-6">
       <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -44,27 +52,27 @@ const AboutPage = () => {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-            <p className="text-2xl font-bold text-zinc-900">08</p>
+            <p className="text-2xl font-bold text-zinc-900">{stats.products || activeProducts.length}</p>
             <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Items
+              Products
             </p>
           </div>
           <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-            <p className="text-2xl font-bold text-zinc-900">06</p>
+            <p className="text-2xl font-bold text-zinc-900">{stats.orderedItems}</p>
             <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Categories
+              Ordered items
             </p>
           </div>
           <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-            <p className="text-2xl font-bold text-zinc-900">03</p>
+            <p className="text-2xl font-bold text-zinc-900">{stats.reviewedItems}</p>
             <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Pickup Slots
+              Reviewed items
             </p>
           </div>
           <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-            <p className="text-2xl font-bold text-zinc-900">24</p>
+            <p className="text-2xl font-bold text-zinc-900">{stats.activeUsers}</p>
             <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Orders
+              Active users
             </p>
           </div>
         </div>
@@ -108,16 +116,16 @@ const AboutPage = () => {
             </p>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
-                <img src={products[0].image} alt={products[0].title} className="h-full w-full object-cover" />
+                <img src={resolveProductImage(activeProducts[0]?.productImage)} alt={activeProducts[0]?.productName || 'Featured product'} className="h-full w-full object-cover" />
               </div>
               <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
-                <img src={products[1].image} alt={products[1].title} className="h-full w-full object-cover" />
+                <img src={resolveProductImage(activeProducts[1]?.productImage)} alt={activeProducts[1]?.productName || 'Featured product'} className="h-full w-full object-cover" />
               </div>
               <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
-                <img src={products[2].image} alt={products[2].title} className="h-full w-full object-cover" />
+                <img src={resolveProductImage(activeProducts[2]?.productImage)} alt={activeProducts[2]?.productName || 'Featured product'} className="h-full w-full object-cover" />
               </div>
               <div className="flex aspect-square items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
-                <img src={products[3].image} alt={products[3].title} className="h-full w-full object-cover" />
+                <img src={resolveProductImage(activeProducts[3]?.productImage)} alt={activeProducts[3]?.productName || 'Featured product'} className="h-full w-full object-cover" />
               </div>
             </div>
             <Button to="/products" className="mt-5">View Products</Button>

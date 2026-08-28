@@ -11,6 +11,9 @@ const Button = ({
   type = "button",
   variant = "primary",
   className = "",
+  disabled = false,
+  onClick,
+  state,
 }) => {
   const baseClasses =
     "inline-flex items-center justify-center rounded-full border-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] transition duration-200 hover:-translate-y-0.5 hover:shadow-lg";
@@ -26,14 +29,14 @@ const Button = ({
 
   if (to) {
     return (
-      <Link to={to} className={classes}>
+      <Link to={to} state={state} className={classes} onClick={onClick}>
         {children}
       </Link>
     );
   }
 
   return (
-    <button type={type} className={classes}>
+    <button type={type} className={classes} disabled={disabled} onClick={onClick}>
       {children}
     </button>
   );

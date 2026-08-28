@@ -1,0 +1,10 @@
+const router = require("express").Router();
+const controller = require("../controllers/userController");
+const { protect, authorize, allowSelfOrAdmin } = require("../middleware/authMiddleware");
+router.post("/register", controller.registerUser);
+router.post("/login", controller.loginUser);
+router.put("/me/password", protect, controller.changePassword);
+router.route("/").get(protect, authorize("admin"), controller.getUsers);
+router.route("/:id").get(protect, allowSelfOrAdmin("id"), controller.getUser).put(protect, allowSelfOrAdmin("id"), controller.updateUser);
+router.put("/:id/admin", protect, authorize("admin"), controller.adminUpdateUser);
+module.exports = router;

@@ -13,6 +13,10 @@ import SignInPage from './pages/AuthPages/SignInPage';
 import SignUpPage from './pages/AuthPages/SignUpPage';
 
 import NotFoundPage from './pages/NotFoundPage';
+import CartPage from './pages/CartPage/CartPage';
+import AdminPage from './pages/UsersPage/AdminPage';
+import SupplierPage from './pages/UsersPage/SupplierPage';
+import OrderPage from './pages/OrderPage/OrderPage';
 
 const routes = [
   {
@@ -21,7 +25,7 @@ const routes = [
     errorElement: <NotFoundPage />,
     children: [
       {
-        path: '',
+        index: true,
         element: <HomePage />,
       },
       {
@@ -36,6 +40,10 @@ const routes = [
         path: 'products/:name',
         element: <ProductPage />,
       },
+      { path: 'cart', element: <CartPage /> },
+      { path: 'orders', element: <OrderPage /> },
+      { path: 'admin', element: <AdminPage /> },
+      { path: 'supplier', element: <SupplierPage /> },
     ],
   },
   {

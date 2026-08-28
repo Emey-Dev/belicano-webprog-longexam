@@ -1,33 +1,115 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from '../../context/useAuth.js';
 import Button from "../../components/Button";
+import { apiUrl } from "../../config/api.js";
 
 const inputClasses =
-  "mt-2 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-gray-400 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-300";
+  "mt-2 w-full rounded-xl border-2 border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-950 focus:ring-2 focus:ring-yellow-300";
 
 const actionButtonClassName =
-  "w-full rounded-xl py-3 text-[11px] tracking-[0.2em] bg-yellow-400 text-black hover:bg-yellow-300";
+  "w-full rounded-xl py-3 text-[11px] tracking-[0.2em] bg-blue-950 text-white hover:bg-black hover:border-black";
+const philippineMobilePattern = /^\+639\d{9}$/;
+const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 const SignUpPage = () => {
-  return (
-    <div className="min-h-screen rounded-3xl bg-blue-950 flex items-center justify-center px-6 sm:px-4">
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", contactNumber: "", address: "", password: "", userRole: "customer" });
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const updateField = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const updateContactNumber = (event) => {
+    const localNumber = event.target.value.replace(/\D/g, "").replace(/^63/, "").replace(/^0/, "").slice(0, 10);
+    setForm({ ...form, contactNumber: localNumber ? `+63${localNumber}` : "" });
+  };
+  const validateForm = () => {
+    if (!form.firstName.trim() || !form.lastName.trim())
+      return "First name and last name are required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      return "Please enter a valid email address.";
+    if (!philippineMobilePattern.test(form.contactNumber.trim()))
+      return "Contact number must use Philippine format: +639XXXXXXXXX.";
+    if (!form.address.trim()) return "Address is required.";
+    if (!passwordPattern.test(form.password))
+      return "Password must be at least 8 characters with letters, numbers, and symbols.";
+    return "";
+  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(apiUrl("user/register"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          response.status === 400
+            ? data.message || "Please check your details and try again."
+            : "Unable to create your account right now. Please try again.",
+        );
+      }
+      login(data);
+      navigate("/");
+    } catch (requestError) {
+      setError(
+        requestError instanceof TypeError
+          ? "Unable to connect right now. Please try again."
+          : requestError.message,
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      <div className="w-full max-w-md rounded-3xl bg-white/95 shadow-xl border border-blue-900/20 p-7 sm:p-8 transition hover:shadow-2xl hover:-translate-y-0.5 duration-300">
-        <h1 className="text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl text-center">
+  return (
+    <div className="w-full">
+      <div className="border-2 border-zinc-900 bg-zinc-50 p-6 shadow-xl sm:p-8">
+        <div className="border-b-2 border-zinc-900 pb-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
+            New account
+          </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl">
           Sign Up
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-gray-600 text-center">
+          </h1>
+        </div>
+        <p className="mt-5 text-sm leading-6 text-zinc-600">
           Create a store account for faster checkout, order updates, and pickup
           details.
         </p>
 
-        <form className="mt-8 space-y-5">
+        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+          <div className="w-48">
+            <label className="text-sm font-medium text-blue-950">Account type</label>
+            <select
+              value={form.userRole}
+              onChange={updateField("userRole")}
+              className={inputClasses}
+            >
+              <option value="customer">Customer</option>
+              <option value="supplier">Supplier</option>
+            </select>
+          </div>
+
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-blue-950">
                 First Name
               </label>
               <input
-                type="text"
+              type="text"
+              value={form.firstName}
+              onChange={updateField("firstName")}
+              required
                 placeholder="First name"
                 className={inputClasses}
               />
@@ -37,7 +119,10 @@ const SignUpPage = () => {
                 Last Name
               </label>
               <input
-                type="text"
+              type="text"
+              value={form.lastName}
+              onChange={updateField("lastName")}
+              required
                 placeholder="Last name"
                 className={inputClasses}
               />
@@ -48,7 +133,42 @@ const SignUpPage = () => {
             <label className="text-sm font-medium text-blue-950">Email</label>
             <input
               type="email"
+              value={form.email}
+              onChange={updateField("email")}
+              required
               placeholder="student@email.com"
+              className={inputClasses}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-blue-950">Contact Number</label>
+            <div className="mt-2 flex items-center rounded-xl border-2 border-zinc-300 bg-white focus-within:border-blue-950 focus-within:ring-2 focus-within:ring-yellow-300">
+              <span className="flex items-center gap-2 border-r border-zinc-300 px-4 py-3 text-sm font-semibold text-zinc-700" aria-label="Philippines country code">
+                <span aria-hidden="true">🇵🇭</span>
+                <span>+63</span>
+              </span>
+              <input
+                type="tel"
+                value={form.contactNumber.replace(/^\+63/, "")}
+                onChange={updateContactNumber}
+                required
+                placeholder="9XXXXXXXXX"
+                pattern="9\d{9}"
+                title="Enter a Philippine mobile number after +63, for example 9171234567"
+                className="w-full bg-transparent px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-blue-950">Address</label>
+            <input
+              type="text"
+              value={form.address}
+              onChange={updateField("address")}
+              required
+              placeholder="Street, city, province"
               className={inputClasses}
             />
           </div>
@@ -59,6 +179,9 @@ const SignUpPage = () => {
             </label>
             <input
               type="password"
+              value={form.password}
+              onChange={updateField("password")}
+              required
               placeholder="Password"
               className={inputClasses}
             />
@@ -67,42 +190,43 @@ const SignUpPage = () => {
             </p>
           </div>
 
-          <Button type="submit" className={actionButtonClassName}>
-            Create Account
+          {error && <p role="alert" className="border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          <Button type="submit" className={actionButtonClassName} disabled={isSubmitting}>
+            {isSubmitting ? "Creating Account..." : "Create Account"}
           </Button>
 
           <div className="grid gap-3 pt-2 sm:grid-cols-2">
             <Button
               type="button"
               variant="secondary"
-              className="w-full rounded-xl py-3 text-[11px] tracking-[0.2em] border border-gray-300 text-black hover:bg-gray-100"
+              className="w-full rounded-xl py-3 text-[11px] tracking-[0.2em] border-2 border-zinc-900 text-zinc-900 hover:bg-zinc-100"
             >
               Google
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="w-full rounded-xl py-3 text-[11px] tracking-[0.2em] border border-gray-300 text-black hover:bg-gray-100"
+              className="w-full rounded-xl py-3 text-[11px] tracking-[0.2em] border-2 border-zinc-900 text-zinc-900 hover:bg-zinc-100"
             >
               Apple
             </Button>
           </div>
         </form>
 
-        <div className="mt-8 border-t border-gray-200 pt-6 text-sm text-gray-700 text-center">
+        <div className="mt-8 border-t-2 border-zinc-900 pt-6 text-sm text-zinc-700">
           Already have an account?{" "}
           <Link
             to="/auth/signin"
-            className="font-semibold text-yellow-500 hover:underline"
+            className="font-bold text-blue-950 underline decoration-yellow-500 decoration-2 underline-offset-4 hover:text-yellow-600"
           >
-            Log In
+            Sign In
           </Link>
         </div>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6">
           <Link
             to="/"
-            className="text-xs tracking-[0.2em] text-gray-500 hover:text-black transition"
+            className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 hover:text-blue-950 transition"
           >
             ← Back to Home
           </Link>
