@@ -192,7 +192,6 @@ belicano-webprog-longexam/
 │   ├── middleware/               # validation and auth checks
 │   ├── models/                   # MongoDB schemas/models
 │   ├── routes/                   # API endpoints
-│   ├── scripts/                  # data and admin scripts
 │   └── ...
 └── node_modules/
 ```
