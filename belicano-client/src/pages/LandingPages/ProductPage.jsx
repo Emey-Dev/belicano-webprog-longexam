@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import Pagination from '../../components/Pagination.jsx';
-import fallbackProducts, { fetchProducts, resolveProductImage } from '../../assets/product-content.js';
+import { fetchProducts, resolveProductImage } from '../../utils/productImage.js';
 import { authHeaders, useAuth } from '../../context/useAuth.js';
 import { apiUrl } from '../../config/api.js';
 
@@ -32,7 +32,7 @@ function ProductPage() {
         if (isCurrent && productRequestRef.current === requestId) setProducts(nextProducts);
       })
       .catch(() => {
-        if (isCurrent && productRequestRef.current === requestId) setProducts(fallbackProducts);
+        if (isCurrent && productRequestRef.current === requestId) setProducts([]);
       })
       .finally(() => {
         if (isCurrent && productRequestRef.current === requestId) setIsLoading(false);
@@ -96,9 +96,7 @@ function ProductPage() {
     (reviewPage - 1) * reviewsPerPage,
     reviewPage * reviewsPerPage,
   );
-  const productImage =
-    resolveProductImage(product.productImage || product.image) ||
-    'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80';
+  const productImage = resolveProductImage(product.productImage || product.image);
   const productContent = Array.isArray(product.content)
     ? product.content
     : [product.productDescription || product.description || 'No product details available.'];
@@ -225,7 +223,11 @@ function ProductPage() {
 
           <div className="order-1 rounded-3xl border-2 border-zinc-900 bg-white p-5 lg:order-2 sm:p-6">
             <div className="mx-auto mb-8 aspect-square w-[70%] overflow-hidden rounded-[1.25rem] border-2 border-zinc-900 bg-white p-4">
-              <img src={productImage} alt={productTitle} className="h-full w-full object-contain" />
+              {productImage ? (
+                <img src={productImage} alt={productTitle} className="h-full w-full object-contain" />
+              ) : (
+                <span className="text-center text-xs font-semibold uppercase tracking-wider text-zinc-400">No image available</span>
+              )}
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl bg-blue-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Category</p><p className="mt-1 font-semibold text-blue-950">{productCategory}</p></div>

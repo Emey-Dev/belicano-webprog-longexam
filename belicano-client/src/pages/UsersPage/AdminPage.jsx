@@ -4,6 +4,7 @@ import Pagination from "../../components/Pagination.jsx";
 import { paginate } from "../../utils/pagination.js";
 import { authHeaders, useAuth } from "../../context/useAuth.js";
 import { apiUrl } from "../../config/api.js";
+import { resolveProductImage } from "../../utils/productImage.js";
 
 const tabs = ["Overview", "Products", "Orders", "Reviews", "Categories", "Users"];
 const blank = {
@@ -21,6 +22,8 @@ const blank = {
 const input =
   "w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-950 focus:ring-2 focus:ring-yellow-300";
 const selectInput = `${input} cursor-pointer appearance-none border-blue-200 bg-blue-50`;
+const filterInput = "w-full rounded-xl border-2 border-zinc-900 bg-white px-3 py-2 text-sm outline-none focus:border-blue-950 focus:ring-2 focus:ring-yellow-300";
+const filterSelect = "cursor-pointer rounded-xl border-2 border-zinc-900 bg-white px-3 py-2 text-sm outline-none focus:border-blue-950 focus:ring-2 focus:ring-yellow-300";
 const emptyUserForm = {
   firstName: "",
   lastName: "",
@@ -50,20 +53,26 @@ export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const [totalSales, setTotalSales] = useState(0);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState("");
   const [message, setMessage] = useState("");
+  const [categoryForm, setCategoryForm] = useState({ categoryName: "", categoryDescription: "" });
+  const [categoryPrompt, setCategoryPrompt] = useState(null);
   const [productPage, setProductPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
   const [reviewPage, setReviewPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
   const [showInactiveProducts, setShowInactiveProducts] = useState(false);
   const [pendingOrderConfirmation, setPendingOrderConfirmation] = useState(null);
+  const [pendingCategoryDeletion, setPendingCategoryDeletion] = useState(null);
   const [productSearch, setProductSearch] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
   const [reviewSearch, setReviewSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [productSort, setProductSort] = useState("all");
+  const [orderSort, setOrderSort] = useState("all");
+  const [reviewSort, setReviewSort] = useState("all");
+  const [userSort, setUserSort] = useState("all");
   const [expandedCategories, setExpandedCategories] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [userForm, setUserForm] = useState(emptyUserForm);
@@ -76,11 +85,14 @@ export default function AdminPage() {
   const salesBySupplier = suppliers.map((supplier) => ({
     ...supplier,
     total: orders
-      .filter((order) => order.orderStatus !== "Cancelled")
+      .filter((order) => order.orderStatus === "Completed")
       .flatMap((order) => order.orderItems || [])
       .filter((item) => products.some((product) => String(product._id) === String(item.productId) && String(product.supplierId?._id || product.supplierId) === String(supplier._id)))
       .reduce((sum, item) => sum + item.productPrice * item.quantity, 0),
   }));
+  const completedSales = orders
+    .filter((order) => order.orderStatus === "Completed")
+    .reduce((total, order) => total + (order.totalAmount || 0), 0);
   const toggleCategory = (categoryId) => {
     const id = String(categoryId);
     setExpandedCategories((current) =>
@@ -110,7 +122,6 @@ export default function AdminPage() {
       setUsers(data[3]);
       setCategories(data[4]);
       setSuppliers(data[5].data || data[5]);
-      setTotalSales(data[6].totalSales || 0);
     } catch {
       navigate("/");
     }
@@ -231,6 +242,39 @@ export default function AdminPage() {
       flash("Unable to update product visibility.");
     }
   };
+  const createCategory = async (event) => {
+    event.preventDefault();
+    try {
+      const category = await api("category", "POST", categoryForm);
+      setCategoryForm({ categoryName: "", categoryDescription: "" });
+      setCategoryPrompt({
+        type: "success",
+        title: "Category added",
+        message: `${category.categoryName} is now available in the catalog.`,
+      });
+      await load();
+    } catch (error) {
+      setCategoryPrompt({
+        type: "error",
+        title: "Category was not added",
+        message: error.message || "Unable to add the category. Please try again.",
+      });
+    }
+  };
+  const deleteCategory = async (category) => {
+    try {
+      await api(`category/${category._id}`, "DELETE");
+      setExpandedCategories((current) => current.filter((id) => id !== String(category._id)));
+      flash("Category deleted.");
+      await load();
+    } catch (error) {
+      setCategoryPrompt({
+        type: "error",
+        title: "Category was not deleted",
+        message: error.message || "Unable to delete the category. Please try again.",
+      });
+    }
+  };
   const matchesSearch = (value, search) =>
     String(value || "").toLowerCase().includes(search.trim().toLowerCase());
   const visibleProducts = products.filter((item) =>
@@ -241,24 +285,36 @@ export default function AdminPage() {
     matchesSearch(
       `${order._id} ${order.userId?.firstName} ${order.userId?.lastName} ${order.userId?.email} ${order.orderItems?.map((item) => item.productName).join(" ")}`,
       orderSearch,
-    ),
+    ) && (orderSort === "all" || order.orderStatus === orderSort),
   );
   const visibleReviews = reviews.filter((review) =>
     matchesSearch(
       `${review.userId?.firstName} ${review.userId?.lastName} ${review.reviewComment} ${review.reviewRating}`,
       reviewSearch,
-    ),
+    ) && (reviewSort === "all" || (reviewSort === "rating-high" && review.reviewRating >= 4) || (reviewSort === "rating-low" && review.reviewRating <= 3)),
   );
   const visibleUsers = users.filter((account) =>
     matchesSearch(
       `${account.firstName} ${account.lastName} ${account.email} ${account.userRole}`,
       userSearch,
-    ),
+    ) && (userSort === "all" || account.userRole === userSort),
   );
-  const pagedProducts = paginate(visibleProducts, productPage);
-  const pagedOrders = paginate(visibleOrders, orderPage);
-  const pagedReviews = paginate(visibleReviews, reviewPage);
-  const pagedUsers = paginate(visibleUsers, userPage);
+  const sortedProducts = [...visibleProducts].sort((left, right) => productSort === "stock-asc"
+    ? left.stockQuantity - right.stockQuantity
+    : productSort === "stock-desc"
+      ? right.stockQuantity - left.stockQuantity
+      : 0);
+  const sortedOrders = visibleOrders;
+  const sortedReviews = [...visibleReviews].sort((left, right) => {
+    if (reviewSort === "rating-high") return right.reviewRating - left.reviewRating;
+    if (reviewSort === "rating-low") return left.reviewRating - right.reviewRating;
+    return 0;
+  });
+  const pagedProducts = paginate(sortedProducts, productPage);
+  const pagedOrders = paginate(sortedOrders, orderPage);
+  const pagedReviews = paginate(sortedReviews, reviewPage);
+  const sortedUsers = visibleUsers;
+  const pagedUsers = paginate(sortedUsers, userPage);
   const userCounts = {
     admin: users.filter((account) => account.userRole === "admin").length,
     customer: users.filter((account) => account.userRole === "customer").length,
@@ -317,7 +373,14 @@ export default function AdminPage() {
         </nav>
         {tab === "Overview" && (
           <section className="mt-6">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <article className="rounded-3xl border-2 border-zinc-900 bg-white p-6">
+              <h2 className="text-xl font-bold">Admin workflow</h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                Create or update products, confirm and prepare orders for
+                pickup, moderate reviews, and manage user status and roles.
+              </p>
+            </article>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {card(products.length, "Products")}
               {card(orders.length, "Orders")}
               {card(reviews.length, "Reviews")}
@@ -327,15 +390,8 @@ export default function AdminPage() {
               )}
             </div>
             <article className="mt-6 rounded-3xl border-2 border-zinc-900 bg-white p-6">
-              <h2 className="text-xl font-bold">Admin workflow</h2>
-              <p className="mt-2 text-sm text-zinc-600">
-                Create or update products, confirm and prepare orders for
-                pickup, moderate reviews, and manage user status and roles.
-              </p>
-            </article>
-            <article className="mt-6 rounded-3xl border-2 border-zinc-900 bg-white p-6">
               <div className="flex items-start justify-between gap-4">
-                <div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Sales overview</p><h2 className="mt-2 text-3xl font-bold text-blue-950">PHP {totalSales.toLocaleString()}</h2><p className="mt-1 text-sm text-zinc-600">Total sales across all non-cancelled orders.</p></div>
+                <div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Sales overview</p><h2 className="mt-2 text-3xl font-bold text-blue-950">PHP {completedSales.toLocaleString()}</h2><p className="mt-1 text-sm text-zinc-600">Total sales from completed orders.</p></div>
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 {salesBySupplier.map((supplier) => <div key={supplier._id} className="flex justify-between rounded-xl border border-zinc-300 p-3 text-sm"><span>{supplier.supplierName}</span><span className="font-bold">PHP {supplier.total.toLocaleString()}</span></div>)}
@@ -502,13 +558,9 @@ export default function AdminPage() {
               </div>
             </form>
             <div className="space-y-3">
-              <input
-                value={productSearch}
-                onChange={(e) => { setProductSearch(e.target.value); setProductPage(1); }}
-                className={input}
-                placeholder="Search products by name or slug"
-                aria-label="Search products by name or slug"
-              />
+              <div className="flex flex-col gap-3 sm:flex-row"><div className="relative min-w-0 flex-1"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" aria-hidden="true">⌕</span><input value={productSearch} onChange={(e) => { setProductSearch(e.target.value); setProductPage(1); }} className={`${filterInput} pl-9`} placeholder="Search products by name or slug" aria-label="Search products by name or slug" /></div><select value={productSort} onChange={(e) => { setProductSort(e.target.value); setProductPage(1); }} className={`${filterSelect} sm:w-auto`} aria-label="Sort products">
+                <option value="all">All</option><option value="stock-asc">Stock: low to high</option><option value="stock-desc">Stock: high to low</option>
+              </select></div>
               <div className="flex items-center justify-between gap-3 border-b-2 border-zinc-900 pb-3">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
@@ -531,7 +583,15 @@ export default function AdminPage() {
                   key={item._id}
                   className={`flex items-center justify-between gap-4 rounded-2xl border-2 border-zinc-900 p-4 ${item.isActive === false ? "bg-zinc-200" : "bg-white"}`}
                 >
-                  <div>
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 p-2">
+                      {resolveProductImage(item.productImage) ? (
+                        <img src={resolveProductImage(item.productImage)} alt={item.productName} className="h-full w-full object-contain" />
+                      ) : (
+                        <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400">No image</span>
+                      )}
+                    </div>
+                    <div>
                     <h3 className="font-bold">{item.productName}</h3>
                     <p className="text-sm text-zinc-600">
                       PHP {item.productPrice} · {item.stockQuantity} available
@@ -539,6 +599,7 @@ export default function AdminPage() {
                     <p className="mt-1 text-xs font-bold uppercase tracking-wider text-zinc-500">
                       {item.isActive === false ? "Disabled" : "Active"}
                     </p>
+                    </div>
                   </div>
                   <div className="flex flex-wrap justify-end gap-2">
                     <button
@@ -575,13 +636,7 @@ export default function AdminPage() {
         )}
         {tab === "Orders" && (
           <section className="mt-6 space-y-3">
-            <input
-              value={orderSearch}
-              onChange={(e) => { setOrderSearch(e.target.value); setOrderPage(1); }}
-              className={input}
-              placeholder="Search orders by customer, item, or order ID"
-              aria-label="Search orders by customer, item, or order ID"
-            />
+            <div className="flex flex-col gap-3 sm:flex-row"><div className="relative min-w-0 flex-1"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" aria-hidden="true">⌕</span><input value={orderSearch} onChange={(e) => { setOrderSearch(e.target.value); setOrderPage(1); }} className={`${filterInput} pl-9`} placeholder="Search orders by customer, item, or order ID" aria-label="Search orders by customer, item, or order ID" /></div><select value={orderSort} onChange={(e) => { setOrderSort(e.target.value); setOrderPage(1); }} className={`${filterSelect} sm:w-auto`} aria-label="Filter orders by status"><option value="all">All</option><option value="Pending">Pending</option><option value="Processing">Processing</option><option value="Ready for pickup">Ready for Pickup</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select></div>
             {pagedOrders.items.map((order) => (
               <article
                 key={order._id}
@@ -626,27 +681,30 @@ export default function AdminPage() {
                       </button>
                     </div>
                   ) : (
-                    <select
-                      className={`${selectInput} sm:max-w-52`}
-                      value={order.orderStatus}
-                      onChange={(e) => updateOrder(order, e.target.value)}
-                    >
-                      {["Pending", "Processing", "Ready for pickup", "Completed", "Cancelled"].map(
-                        (item) => {
-                          const disabled =
-                            item === "Pending" ||
-                            item === order.orderStatus ||
-                            (order.orderStatus === "Processing" && item === "Completed") ||
-                            (order.orderStatus === "Ready for pickup" &&
-                              ["Processing", "Pending"].includes(item));
-                          return (
-                            <option key={item} disabled={disabled}>
-                              {item}
-                            </option>
-                          );
-                        },
-                      )}
-                    </select>
+                    <div className="relative sm:max-w-52">
+                      <select
+                        className={`${selectInput} pr-10`}
+                        value={order.orderStatus}
+                        onChange={(e) => updateOrder(order, e.target.value)}
+                      >
+                        {["Pending", "Processing", "Ready for pickup", "Completed", "Cancelled"].map(
+                          (item) => {
+                            const disabled =
+                              item === "Pending" ||
+                              item === order.orderStatus ||
+                              (order.orderStatus === "Processing" && item === "Completed") ||
+                              (order.orderStatus === "Ready for pickup" &&
+                                ["Processing", "Pending"].includes(item));
+                            return (
+                              <option key={item} disabled={disabled}>
+                                {item}
+                              </option>
+                            );
+                          },
+                        )}
+                      </select>
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-blue-950" aria-hidden="true">⌄</span>
+                    </div>
                   )}
                 </div>
                 <p className="mt-3 text-sm text-zinc-600">
@@ -665,13 +723,7 @@ export default function AdminPage() {
         )}
         {tab === "Reviews" && (
           <section className="mt-6 space-y-3">
-            <input
-              value={reviewSearch}
-              onChange={(e) => { setReviewSearch(e.target.value); setReviewPage(1); }}
-              className={input}
-              placeholder="Search reviews by customer, rating, or comment"
-              aria-label="Search reviews by customer, rating, or comment"
-            />
+            <div className="flex flex-col gap-3 sm:flex-row"><div className="relative min-w-0 flex-1"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" aria-hidden="true">⌕</span><input value={reviewSearch} onChange={(e) => { setReviewSearch(e.target.value); setReviewPage(1); }} className={`${filterInput} pl-9`} placeholder="Search reviews by customer, rating, or comment" aria-label="Search reviews by customer, rating, or comment" /></div><select value={reviewSort} onChange={(e) => { setReviewSort(e.target.value); setReviewPage(1); }} className={`${filterSelect} sm:w-auto`} aria-label="Filter reviews"><option value="all">All</option><option value="rating-high">Rating: high</option><option value="rating-low">Rating: low</option></select></div>
             {pagedReviews.items.map((review) => (
               <article
                 key={review._id}
@@ -718,11 +770,20 @@ export default function AdminPage() {
                     Save
                   </button>
                 </div>
-                <div className="mt-3 border-t border-zinc-300 pt-3 text-sm text-zinc-500">
+                <div className="mt-3 flex gap-4 border-t border-zinc-300 pt-3 text-sm text-zinc-500">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 p-2">
+                    {resolveProductImage(review.productId?.productImage) ? (
+                      <img src={resolveProductImage(review.productId.productImage)} alt={review.productId?.productName || "Reviewed product"} className="h-full w-full object-contain" />
+                    ) : (
+                      <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400">No image</span>
+                    )}
+                  </div>
+                  <div>
                   <p>Product: <span className="font-semibold text-zinc-800">{review.productId?.productName || "Unknown product"}</span></p>
                   <p>By: {review.userId?.firstName || "Customer"} {review.userId?.lastName || ""}</p>
                   <p>Submitted: {review.createdAt ? new Date(review.createdAt).toLocaleString() : "Date unavailable"}</p>
                   <p className="mt-1 text-zinc-700">Feedback: {review.reviewComment || "No written feedback"}</p>
+                  </div>
                 </div>
               </article>
             ))}
@@ -735,13 +796,44 @@ export default function AdminPage() {
         )}
         {tab === "Categories" && (
           <section className="mt-6">
-            <div className="grid gap-4 md:grid-cols-3">
+            <form onSubmit={createCategory} className="mb-6 rounded-3xl border-2 border-zinc-900 bg-white p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Category management</p>
+              <h2 className="mt-2 text-xl font-bold text-blue-950">Add category</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[.8fr_1.2fr_auto] sm:items-end">
+                <label className="grid gap-1 text-sm font-semibold text-zinc-700">
+                  Category name
+                  <input
+                    className={input}
+                    value={categoryForm.categoryName}
+                    onChange={(event) => setCategoryForm({ ...categoryForm, categoryName: event.target.value })}
+                    placeholder="e.g. Accessories"
+                    required
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-semibold text-zinc-700">
+                  Description
+                  <input
+                    className={input}
+                    value={categoryForm.categoryDescription}
+                    onChange={(event) => setCategoryForm({ ...categoryForm, categoryDescription: event.target.value })}
+                    placeholder="Optional category description"
+                  />
+                </label>
+                <button type="submit" className="w-full cursor-pointer whitespace-nowrap rounded-full bg-blue-950 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-black hover:shadow-lg sm:w-auto">
+                  Add category
+                </button>
+              </div>
+            </form>
+            <div className="grid items-start gap-4 md:grid-cols-3">
               {categories.map((category) => (
                 <article key={category._id} className={`relative rounded-2xl border-2 border-zinc-900 bg-white p-5 ${expandedCategories.includes(String(category._id)) ? "z-20" : "z-0"}`}>
                   <button type="button" onClick={() => toggleCategory(category._id)} className={`cursor-pointer flex w-full items-center justify-between text-left text-sm font-bold uppercase tracking-wider ${expandedCategories.includes(String(category._id)) ? "text-blue-950" : "text-zinc-700"}`}>
                     [{category.categoryName}]<span>{expandedCategories.includes(String(category._id)) ? "−" : "+"}</span>
                   </button>
-                  {expandedCategories.includes(String(category._id)) && <div className="absolute left-0 right-0 top-full mt-2 space-y-2 rounded-2xl border-2 border-zinc-900 bg-white p-5 text-sm text-zinc-700 shadow-xl">
+                  <button type="button" onClick={() => setPendingCategoryDeletion(category)} className="mt-4 cursor-pointer text-xs font-bold uppercase tracking-wider text-red-700 underline underline-offset-4 hover:text-red-900">
+                    Delete category
+                  </button>
+                  {expandedCategories.includes(String(category._id)) && <div className="mt-4 space-y-2 border-t-2 border-zinc-200 pt-4 text-sm text-zinc-700">
                     {products.filter((product) => String(product.categoryId?._id || product.categoryId) === String(category._id)).length ? products.filter((product) => String(product.categoryId?._id || product.categoryId) === String(category._id)).map((product) => <div key={product._id} className="flex items-center justify-between gap-4"><span>{product.productName} · PHP {product.productPrice}</span><span className="text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">{supplierName(product)}</span></div>) : <p>No products in this category.</p>}
                   </div>}
                 </article>
@@ -758,13 +850,7 @@ export default function AdminPage() {
               {card(userCounts.active, "Active Account", true)}
               {card(userCounts.inactive, "Deactive Account", true)}
             </div>
-            <input
-              value={userSearch}
-              onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }}
-              className={input}
-              placeholder="Search users by name, email, or role"
-              aria-label="Search users by name, email, or role"
-            />
+            <div className="flex flex-col gap-3 sm:flex-row"><div className="relative min-w-0 flex-1"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" aria-hidden="true">⌕</span><input value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }} className={`${filterInput} pl-9`} placeholder="Search users by name, email, or role" aria-label="Search users by name, email, or role" /></div><select value={userSort} onChange={(e) => { setUserSort(e.target.value); setUserPage(1); }} className={`${filterSelect} sm:w-auto`} aria-label="Filter users by role"><option value="all">All</option><option value="customer">Customer</option><option value="supplier">Supplier</option><option value="admin">Admin</option></select></div>
             <div className="grid gap-4 md:grid-cols-2">
             {pagedUsers.items.map((account) => (
               <article
@@ -877,6 +963,55 @@ export default function AdminPage() {
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button type="button" onClick={() => setPendingOrderConfirmation(null)} className="cursor-pointer rounded-xl border-2 border-zinc-900 px-4 py-3 text-xs font-bold uppercase tracking-wider text-zinc-900">Review later</button>
               <button type="button" onClick={() => { const order = pendingOrderConfirmation; setPendingOrderConfirmation(null); void updateOrder(order, "Processing"); }} className="cursor-pointer rounded-xl border-2 border-blue-950 bg-blue-950 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white">Confirm and process</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {pendingCategoryDeletion && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-blue-950/70 px-4 py-6"
+          role="presentation"
+          onKeyDown={(event) => { if (event.key === "Escape") setPendingCategoryDeletion(null); }}
+          tabIndex={-1}
+          autoFocus
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPendingCategoryDeletion(null);
+          }}
+        >
+          <section
+            className="w-full max-w-md border-2 border-zinc-900 bg-zinc-50 p-6 text-zinc-900 shadow-2xl sm:p-8"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="category-deletion-title"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">Category action</p>
+            <h2 id="category-deletion-title" className="mt-2 text-2xl font-bold text-blue-950">Delete {pendingCategoryDeletion.categoryName}?</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-600">Products in this category will no longer have a category assigned. This action cannot be undone.</p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setPendingCategoryDeletion(null)} className="cursor-pointer rounded-xl border-2 border-zinc-900 px-4 py-3 text-xs font-bold uppercase tracking-wider text-zinc-900 transition hover:bg-zinc-100">Keep category</button>
+              <button type="button" onClick={() => { const category = pendingCategoryDeletion; setPendingCategoryDeletion(null); void deleteCategory(category); }} className="cursor-pointer rounded-xl border-2 border-red-700 bg-red-700 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:border-red-900 hover:bg-red-900">Delete category</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {categoryPrompt && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-blue-950/70 px-4 py-6"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setCategoryPrompt(null);
+          }}
+        >
+          <section className="w-full max-w-md border-2 border-zinc-900 bg-zinc-50 p-6 text-zinc-900 shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="category-prompt-title">
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.28em] ${categoryPrompt.type === "success" ? "text-green-700" : "text-red-700"}`}>
+              Category management
+            </p>
+            <h2 id="category-prompt-title" className="mt-2 text-2xl font-bold text-blue-950">{categoryPrompt.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-600">{categoryPrompt.message}</p>
+            <div className="mt-6 flex justify-end">
+              <button type="button" onClick={() => setCategoryPrompt(null)} className="cursor-pointer rounded-xl border-2 border-blue-950 bg-blue-950 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:border-black hover:bg-black">
+                Close
+              </button>
             </div>
           </section>
         </div>

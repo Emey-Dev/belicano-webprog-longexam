@@ -20,6 +20,8 @@ export default function OrderPage() {
   const [drafts, setDrafts] = useState({});
   const [message, setMessage] = useState("");
   const [confirmation, setConfirmation] = useState(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const load = useCallback(async () => {
     const [orderResponse, reviewResponse] = await Promise.all([
       fetch(apiUrl(`order${user?.userRole === "admin" ? "?mine=true" : ""}`), { headers: authHeaders(token) }),
@@ -90,6 +92,13 @@ export default function OrderPage() {
     setDrafts((current) => ({ ...current, [draftKey]: { reviewRating: 5, reviewComment: "" } }));
     load();
   };
+  const visibleOrders = orders
+    .filter((order) =>
+      `${order._id} ${order.orderStatus} ${order.orderItems?.map((item) => item.productName).join(" ")}`
+        .toLowerCase()
+        .includes(search.trim().toLowerCase()),
+    )
+    .filter((order) => statusFilter === "all" || order.orderStatus === statusFilter);
   return (
     <div className="min-h-screen bg-zinc-100 px-4 py-8 sm:px-6">
       <main className="mx-auto max-w-5xl">
@@ -122,7 +131,32 @@ export default function OrderPage() {
           </section>
         ) : (
           <section className="mt-6 space-y-4">
-            {orders.map((order) => (
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="relative min-w-0 flex-1">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" aria-hidden="true">⌕</span>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="w-full rounded-xl border-2 border-zinc-900 py-2 pl-9 pr-4"
+                  placeholder="Search orders by ID, status, or product"
+                  aria-label="Search orders"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="w-full rounded-xl border-2 border-zinc-900 px-4 py-2 sm:w-auto"
+                aria-label="Filter orders by status"
+              >
+                <option value="all">All</option>
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
+                <option value="Ready for pickup">Ready for Pickup</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            {visibleOrders.map((order) => (
               <article
                 key={order._id}
                 className="rounded-3xl border-2 border-zinc-900 bg-white p-5"
@@ -240,6 +274,7 @@ export default function OrderPage() {
                 )}
               </article>
             ))}
+            {!visibleOrders.length && <p className="rounded-2xl border-2 border-zinc-900 bg-white p-6 text-center text-sm text-zinc-600">No orders match your search.</p>}
           </section>
         )}
       </main>

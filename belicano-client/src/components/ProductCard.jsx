@@ -1,5 +1,5 @@
 import Button from './Button';
-import { resolveProductImage } from '../assets/product-content.js';
+import { resolveProductImage } from '../utils/productImage.js';
 
 const ProductCard = ({ product, index, returnTo }) => {
   const productName = product.productName || product.title || product.name || 'Product';
@@ -10,9 +10,7 @@ const ProductCard = ({ product, index, returnTo }) => {
       ? `PHP ${new Intl.NumberFormat('en-PH').format(product.productPrice)}`
       : product.price || 'PHP 0';
   const productStock = product.stockStatus || product.stock || 'In stock';
-  const productImage =
-    resolveProductImage(product.productImage || product.image) ||
-    'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80';
+  const productImage = resolveProductImage(product.productImage || product.image);
   const previewText =
     Array.isArray(product.content) && product.content.length > 0
       ? product.content[0]
@@ -21,11 +19,11 @@ const ProductCard = ({ product, index, returnTo }) => {
   return (
     <article className="flex h-full flex-col rounded-3xl border-2 border-zinc-900 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-white p-3">
-        <img
-          src={productImage}
-          alt={productName}
-          className="h-full w-full object-contain"
-        />
+        {productImage ? (
+          <img src={productImage} alt={productName} className="h-full w-full object-contain" />
+        ) : (
+          <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400">No image</span>
+        )}
       </div>
       <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
         {productCategory} {String(index + 1).padStart(2, '0')}

@@ -1,15 +1,15 @@
 import Button from '../../components/Button';
 import logo from '../../assets/img/nubdexchange_logo.png';
 import banner from '../../assets/img/nu_bulldogex_banner.jpg';
-import products, { fetchProducts, resolveProductImage } from '../../assets/product-content.js';
+import { fetchProducts, resolveProductImage } from '../../utils/productImage.js';
 import { useEffect, useState } from 'react';
 
 const AboutPage = () => {
-  const [catalog, setCatalog] = useState(products);
+  const [catalog, setCatalog] = useState([]);
   const [stats, setStats] = useState({ products: 0, orderedItems: 0, reviewedItems: 0, activeUsers: 0 });
   useEffect(() => {
-    fetchProducts().then(setCatalog).catch(() => setCatalog(products));
-    fetch(`${(import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "")}/stats`).then((response) => response.ok ? response.json() : Promise.reject()).then(setStats).catch(() => {});
+    fetchProducts().then(setCatalog).catch(() => setCatalog([]));
+    fetch(`${(import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "")}/public-stats`).then((response) => response.ok ? response.json() : Promise.reject()).then(setStats).catch(() => {});
   }, []);
   const activeProducts = catalog.filter((product) => product.isActive !== false);
   return (

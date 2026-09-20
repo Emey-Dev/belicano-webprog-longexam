@@ -51,6 +51,12 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const SignInIcon = () => (
+  <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 17l5-5-5-5M15 12H3m9-8h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6" />
+  </svg>
+);
+
 const AdminIcon = () => (
   <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h16M6 17V7l6-3 6 3v10M9 17v-4h6v4M9 9h.01M15 9h.01" />
@@ -230,7 +236,7 @@ const NavBar = () => {
                 <LogoutIcon />
               </button>
             </div>
-          </> : <NavLink to="/auth/signin" className={navLinkClassName}>Sign In</NavLink>}
+          </> : <NavLink to="/auth/signin" className={navLinkClassName}><SignInIcon /><span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider">Sign In</span></NavLink>}
 
         </nav>
 

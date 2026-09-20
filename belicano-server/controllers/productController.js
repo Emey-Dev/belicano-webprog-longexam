@@ -1,6 +1,7 @@
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const Supplier = require("../models/supplierModel");
+const Order = require("../models/orderModel");
 const { HttpStatus } = require("../config/constants");
 
 const isV1Request = (req) => req.baseUrl.startsWith("/api/v1/");
@@ -19,6 +20,22 @@ const exactNamePattern = (value) =>
 const populateProduct = (query, includeSupplier = false) => {
   query.populate("categoryId", "categoryName");
   return includeSupplier ? query.populate("supplierId", "supplierName") : query;
+};
+
+const withSalesCounts = async (products) => {
+  const ids = products.map((product) => product._id);
+  if (!ids.length) return products;
+  const counts = await Order.aggregate([
+    { $match: { orderStatus: "Completed", "orderItems.productId": { $in: ids } } },
+    { $unwind: "$orderItems" },
+    { $match: { "orderItems.productId": { $in: ids } } },
+    { $group: { _id: "$orderItems.productId", soldQuantity: { $sum: "$orderItems.quantity" } } },
+  ]);
+  const countByProduct = new Map(counts.map((item) => [String(item._id), item.soldQuantity]));
+  return products.map((product) => ({
+    ...product.toObject(),
+    soldQuantity: countByProduct.get(String(product._id)) || 0,
+  }));
 };
 
 const getProducts = async (req, res, includeInactive = false) => {
@@ -53,7 +70,7 @@ const getProducts = async (req, res, includeInactive = false) => {
 
     if (req.query.sort === "price") products.sort({ productPrice: 1 });
 
-    const data = await products.skip(skip).limit(limit);
+    const data = await withSalesCounts(await products.skip(skip).limit(limit));
     if (versionOne)
       return sendV1Response(
         res,
@@ -109,14 +126,17 @@ const getProduct = async (req, res) => {
         .status(HttpStatus.NOT_FOUND)
         .json({ message: "Product not found." });
     }
+    const productDocument = await product;
+    const data = productDocument.toObject();
+    const [withSales] = await withSalesCounts([productDocument]);
     if (versionOne)
       return sendV1Response(
         res,
         HttpStatus.OK,
         "Product retrieved successfully.",
-        product,
+        { ...data, soldQuantity: withSales.soldQuantity },
       );
-    res.json(product);
+    res.json({ ...data, soldQuantity: withSales.soldQuantity });
   } catch (error) {
     if (isV1Request(req))
       return sendV1Response(res, HttpStatus.BAD_REQUEST, error.message);

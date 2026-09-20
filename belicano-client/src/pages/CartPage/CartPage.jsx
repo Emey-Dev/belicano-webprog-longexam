@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authHeaders, useAuth } from "../../context/useAuth.js";
 import { apiUrl } from "../../config/api.js";
+import { resolveProductImage } from "../../utils/productImage.js";
 
 const EMPTY_CART_ITEMS = [];
 
@@ -217,8 +218,19 @@ export default function CartPage() {
                 return (
                 <article
                   key={itemId}
-                  className={`flex items-center justify-between gap-4 rounded-2xl border-2 p-5 ${isUnavailable ? "border-zinc-400 bg-zinc-200 opacity-70" : "border-zinc-900 bg-white"}`}
+                  className={`grid gap-4 rounded-2xl border-2 p-4 sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:items-center sm:p-5 ${isUnavailable ? "border-zinc-400 bg-zinc-200 opacity-70" : "border-zinc-900 bg-white"}`}
                 >
+                  <div className="flex h-28 w-full items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 p-2 sm:h-28 sm:w-28">
+                    {resolveProductImage(productId?.productImage) ? (
+                      <img
+                        src={resolveProductImage(productId.productImage)}
+                        alt={productId?.productName || "Unavailable product"}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400">No image</span>
+                    )}
+                  </div>
                   <div className="min-w-0">
                     <label className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-600">
                       <input
@@ -243,7 +255,7 @@ export default function CartPage() {
                         : `${productId.stockQuantity} available`}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
@@ -324,7 +336,7 @@ export default function CartPage() {
               </div>
               <button
                 onClick={() => setShowOrderPrompt(true)}
-                className="mt-5 w-full rounded-full bg-yellow-400 px-4 py-3 text-xs font-bold uppercase tracking-wider text-blue-950"
+                className="mt-5 w-full cursor-pointer rounded-full bg-yellow-400 px-4 py-3 text-xs font-bold uppercase tracking-wider text-blue-950 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-lg active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Place order
               </button>

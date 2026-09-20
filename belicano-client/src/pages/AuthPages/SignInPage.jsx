@@ -17,6 +17,7 @@ const SignInPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -85,14 +86,34 @@ const SignInPage = () => {
             <label className="text-sm font-medium text-blue-950">
               Password
             </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              required
-              placeholder="Password"
-              className={inputClasses}
-            />
+            <div className="relative mt-2">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                required
+                placeholder="Password"
+                className={`${inputClasses} mt-0 pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 flex translate-y-px cursor-pointer items-center pr-3 text-zinc-500 transition hover:text-blue-950"
+              >
+                {showPassword ? (
+                  <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.3A10.7 10.7 0 0 1 12 4c5 0 8.5 4 9.5 6a16.6 16.6 0 0 1-3.2 3.9M6.2 6.2C4.5 7.4 3.4 9 2.5 10c1 2 4.5 6 9.5 6 1 0 1.9-.2 2.7-.5" />
+                  </svg>
+                ) : (
+                  <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12S6 6 12 6s9.5 6 9.5 6S18 18 12 18s-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                )}
+              </button>
+            </div>
             <p className="mt-2 text-xs leading-5 text-gray-500">
               It must be a combination of minimum 8 letters, numbers, and
               symbols.

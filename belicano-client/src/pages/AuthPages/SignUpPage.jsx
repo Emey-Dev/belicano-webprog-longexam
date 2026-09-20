@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from '../../context/useAuth.js';
+import { useAuth } from "../../context/useAuth.js";
 import Button from "../../components/Button";
 import { apiUrl } from "../../config/api.js";
 
@@ -15,12 +15,26 @@ const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 const SignUpPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", contactNumber: "", address: "", password: "", userRole: "customer" });
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    contactNumber: "",
+    address: "",
+    password: "",
+    userRole: "customer",
+  });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const updateField = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const [showPassword, setShowPassword] = useState(false);
+  const updateField = (field) => (event) =>
+    setForm({ ...form, [field]: event.target.value });
   const updateContactNumber = (event) => {
-    const localNumber = event.target.value.replace(/\D/g, "").replace(/^63/, "").replace(/^0/, "").slice(0, 10);
+    const localNumber = event.target.value
+      .replace(/\D/g, "")
+      .replace(/^63/, "")
+      .replace(/^0/, "")
+      .slice(0, 10);
     setForm({ ...form, contactNumber: localNumber ? `+63${localNumber}` : "" });
   };
   const validateForm = () => {
@@ -79,7 +93,7 @@ const SignUpPage = () => {
             New account
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl">
-          Sign Up
+            Sign Up
           </h1>
         </div>
         <p className="mt-5 text-sm leading-6 text-zinc-600">
@@ -89,7 +103,9 @@ const SignUpPage = () => {
 
         <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
           <div className="w-48">
-            <label className="text-sm font-medium text-blue-950">Account type</label>
+            <label className="text-sm font-medium text-blue-950">
+              Account type
+            </label>
             <select
               value={form.userRole}
               onChange={updateField("userRole")}
@@ -106,10 +122,10 @@ const SignUpPage = () => {
                 First Name
               </label>
               <input
-              type="text"
-              value={form.firstName}
-              onChange={updateField("firstName")}
-              required
+                type="text"
+                value={form.firstName}
+                onChange={updateField("firstName")}
+                required
                 placeholder="First name"
                 className={inputClasses}
               />
@@ -119,10 +135,10 @@ const SignUpPage = () => {
                 Last Name
               </label>
               <input
-              type="text"
-              value={form.lastName}
-              onChange={updateField("lastName")}
-              required
+                type="text"
+                value={form.lastName}
+                onChange={updateField("lastName")}
+                required
                 placeholder="Last name"
                 className={inputClasses}
               />
@@ -142,9 +158,14 @@ const SignUpPage = () => {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-blue-950">Contact Number</label>
+            <label className="text-sm font-medium text-blue-950">
+              Contact Number
+            </label>
             <div className="mt-2 flex items-center rounded-xl border-2 border-zinc-300 bg-white focus-within:border-blue-950 focus-within:ring-2 focus-within:ring-yellow-300">
-              <span className="flex items-center gap-2 border-r border-zinc-300 px-4 py-3 text-sm font-semibold text-zinc-700" aria-label="Philippines country code">
+              <span
+                className="flex items-center gap-2 border-r border-zinc-300 px-4 py-3 text-sm font-semibold text-zinc-700"
+                aria-label="Philippines country code"
+              >
                 <span aria-hidden="true">🇵🇭</span>
                 <span>+63</span>
               </span>
@@ -177,21 +198,52 @@ const SignUpPage = () => {
             <label className="text-sm font-medium text-blue-950">
               Password
             </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={updateField("password")}
-              required
-              placeholder="Password"
-              className={inputClasses}
-            />
+            <div className="relative mt-2">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={updateField("password")}
+                required
+                placeholder="Password"
+                className={`${inputClasses} mt-0 pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 flex translate-y-px cursor-pointer items-center pr-3 text-zinc-500 transition hover:text-blue-950"
+              >
+                {showPassword ? (
+                  <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.3A10.7 10.7 0 0 1 12 4c5 0 8.5 4 9.5 6a16.6 16.6 0 0 1-3.2 3.9M6.2 6.2C4.5 7.4 3.4 9 2.5 10c1 2 4.5 6 9.5 6 1 0 1.9-.2 2.7-.5" />
+                  </svg>
+                ) : (
+                  <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12S6 6 12 6s9.5 6 9.5 6S18 18 12 18s-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                )}
+              </button>
+            </div>
             <p className="mt-2 text-xs leading-5 text-gray-500">
               Use a secure password with letters, numbers, and symbols.
             </p>
           </div>
 
-          {error && <p role="alert" className="border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <Button type="submit" className={actionButtonClassName} disabled={isSubmitting}>
+          {error && (
+            <p
+              role="alert"
+              className="border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {error}
+            </p>
+          )}
+          <Button
+            type="submit"
+            className={actionButtonClassName}
+            disabled={isSubmitting}
+          >
             {isSubmitting ? "Creating Account..." : "Create Account"}
           </Button>
 

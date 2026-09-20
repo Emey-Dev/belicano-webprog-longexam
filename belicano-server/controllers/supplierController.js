@@ -73,13 +73,13 @@ const getOwnedSupplierData = async (req) => {
       : [],
     productIds.length
       ? Review.find({ productId: { $in: productIds } })
-        .populate("productId", "productName")
+        .populate("productId", "productName productImage")
         .populate("userId", "firstName lastName")
         .sort({ createdAt: -1 })
       : [],
   ]);
   const totalSales = orders
-    .filter((order) => order.orderStatus !== "Cancelled")
+    .filter((order) => order.orderStatus === "Completed")
     .reduce((total, order) => total + order.orderItems
       .filter((item) => productIds.some((id) => String(id) === String(item.productId)))
       .reduce((subtotal, item) => subtotal + item.productPrice * item.quantity, 0), 0);

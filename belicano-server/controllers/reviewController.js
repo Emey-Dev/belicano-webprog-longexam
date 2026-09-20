@@ -10,7 +10,7 @@ const getReviews = async (req, res) => {
     res.json(
       await Review.find(filter)
         .populate("userId", "firstName lastName")
-        .populate("productId", "productName"),
+        .populate("productId", "productName productImage"),
     );
   } catch (error) {
     res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });

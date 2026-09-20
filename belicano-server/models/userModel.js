@@ -33,7 +33,9 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre("save", async function hashPassword(next) {
   if (this.userRole === "supplier" && !this.supplierId)
-    return next(new Error("A supplier account must be linked to a supplier record."));
+    return next(
+      new Error("A supplier account must be linked to a supplier record."),
+    );
   if (!this.isModified("passwordHash")) return next();
   this.passwordHash = await bcrypt.hash(this.passwordHash, SALT);
   next();
