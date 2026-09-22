@@ -25,6 +25,13 @@ const protect = async (req, res, next) => {
       return res
         .status(HttpStatus.UNAUTHORIZED)
         .json({ message: "User account no longer exists." });
+    if (
+      payload.sessionVersion === undefined ||
+      payload.sessionVersion !== (user.sessionVersion || 0)
+    )
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: "Your session has ended. Please sign in again." });
     if (!user.isActive)
       return res
         .status(HttpStatus.FORBIDDEN)

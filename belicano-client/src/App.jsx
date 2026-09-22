@@ -11,12 +11,15 @@ import ProductListPage from './pages/LandingPages/ProductListPage';
 import AuthLayout from './layouts/AuthLayout';
 import SignInPage from './pages/AuthPages/SignInPage';
 import SignUpPage from './pages/AuthPages/SignUpPage';
+import ChangePasswordPage from './pages/AuthPages/ChangePasswordPage';
+import ForgotPasswordPage from './pages/AuthPages/ForgotPasswordPage';
 
 import NotFoundPage from './pages/NotFoundPage';
 import CartPage from './pages/CartPage/CartPage';
 import AdminPage from './pages/UsersPage/AdminPage';
 import SupplierPage from './pages/UsersPage/SupplierPage';
 import OrderPage from './pages/OrderPage/OrderPage';
+import UserProfilePage from './pages/UsersPage/UserProfilePage';
 
 const routes = [
   {
@@ -44,6 +47,7 @@ const routes = [
       { path: 'orders', element: <OrderPage /> },
       { path: 'admin', element: <AdminPage /> },
       { path: 'supplier', element: <SupplierPage /> },
+      { path: 'profile', element: <UserProfilePage /> },
     ],
   },
   {
@@ -58,7 +62,15 @@ const routes = [
       {
         path: "signup",
         element: <SignUpPage />,
-      }
+      },
+      {
+        path: "change-password",
+        element: <ChangePasswordPage />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage />,
+      },
     ],
   },
 ];

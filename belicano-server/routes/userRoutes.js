@@ -5,13 +5,36 @@ const {
   authorize,
   allowSelfOrAdmin,
 } = require("../middleware/authentication");
-router.post("/register", UserController.registerUser);
-router.post("/login", UserController.login);
-router.put("/me/password", protect, UserController.changePassword);
+const {
+  registerValidation,
+  loginValidation,
+  changePasswordValidation,
+  forgotPasswordValidation,
+} = require("../middleware/validationMiddleware");
+const {
+  loginLimiter,
+  registerLimiter,
+} = require("../middleware/rateLimiterMiddleware");
+router.post(
+  "/register",
+  registerLimiter,
+  registerValidation,
+  UserController.registerUser,
+);
+router.post("/login", loginLimiter, loginValidation, UserController.login);
+router.put(
+  "/me/password",
+  protect,
+  changePasswordValidation,
+  UserController.changePassword,
+);
+router.put(
+  "/forgot-password",
+  forgotPasswordValidation,
+  UserController.forgotPassword,
+);
 router.get("/user/", protect, authorize("admin"), UserController.getAllUsers);
-router
-  .route("/")
-  .get(protect, authorize("admin"), UserController.getUsers);
+router.route("/").get(protect, authorize("admin"), UserController.getUsers);
 router
   .route("/:id")
   .get(protect, allowSelfOrAdmin("id"), UserController.getUserById)

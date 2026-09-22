@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from '../../context/useAuth.js';
 import Button from "../../components/Button";
@@ -10,6 +10,12 @@ const inputClasses =
 const actionButtonClassName =
   "w-full rounded-xl py-3 text-[11px] tracking-[0.2em] bg-blue-950 text-white hover:bg-black hover:border-black";
 
+const formatCountdown = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
+};
+
 const SignInPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,10 +24,29 @@ const SignInPage = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPrompt, setShowForgotPrompt] = useState(false);
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(0);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+
+  useEffect(() => {
+    if (!retryAfterSeconds) return undefined;
+    const timer = window.setInterval(() => {
+      setRetryAfterSeconds((seconds) => Math.max(seconds - 1, 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [retryAfterSeconds]);
+
+  useEffect(() => {
+    if (retryAfterSeconds === 0 && isRateLimited) {
+      setError("");
+      setIsRateLimited(false);
+    }
+  }, [retryAfterSeconds, isRateLimited]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setIsRateLimited(false);
     setIsSubmitting(true);
     try {
       const response = await fetch(apiUrl("user/login"), {
@@ -31,6 +56,14 @@ const SignInPage = () => {
       });
       const data = await response.json();
       if (!response.ok) {
+        if (response.status === 429) {
+          const retryAfter = Number(data.retryAfterSeconds || response.headers.get("Retry-After") || 0);
+          setRetryAfterSeconds(retryAfter);
+          setIsRateLimited(true);
+          throw new Error(
+            `Too many failed login attempts (${data.failedAttempts || "multiple"}). Please wait before trying again.`,
+          );
+        }
         throw new Error(
           response.status === 401
             ? "Invalid username or password."
@@ -127,15 +160,25 @@ const SignInPage = () => {
             </label>
             <button
               type="button"
+              onClick={() => navigate("/auth/forgot-password")}
               className="font-semibold text-blue-950 underline decoration-yellow-500 decoration-2 underline-offset-4 transition hover:text-yellow-600"
             >
               Forgot Password?
             </button>
           </div>
 
-          {error && <p role="alert" className="border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <Button type="submit" className={actionButtonClassName} disabled={isSubmitting}>
-            {isSubmitting ? "Logging In..." : "Log In"}
+          <div className="min-h-5">
+            {error && (
+              <p role="alert" aria-live="polite" className="border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+                {isRateLimited && ` Time remaining: ${formatCountdown(retryAfterSeconds)}.`}
+              </p>
+            )}
+          </div>
+          <Button type="submit" className={actionButtonClassName} disabled={isSubmitting || retryAfterSeconds > 0}>
+            {isSubmitting
+            ? "Logging In..."
+            : "Log In"}
           </Button>
 
           <div className="grid gap-3 pt-2 sm:grid-cols-2">
@@ -174,6 +217,52 @@ const SignInPage = () => {
             ← Back to Home
           </Link>
         </div>
+        {showForgotPrompt && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-blue-950/70 px-4 py-6"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setShowForgotPrompt(false);
+            }}
+          >
+            <section
+              className="w-full max-w-md border-2 border-zinc-900 bg-zinc-50 p-6 text-zinc-900 shadow-2xl sm:p-8"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="forgot-password-title"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
+                Account action
+              </p>
+              <h2 id="forgot-password-title" className="mt-2 text-2xl font-bold text-blue-950">
+                Sign in first to change your password
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-zinc-600">
+                Password changes are available inside your profile after you
+                successfully sign in.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPrompt(false)}
+                  className="cursor-pointer rounded-xl border-2 border-zinc-900 px-4 py-3 text-xs font-bold uppercase tracking-wider text-zinc-900 transition hover:bg-zinc-100"
+                >
+                  Stay here
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPrompt(false);
+                    document.querySelector("input[type='email']")?.focus();
+                  }}
+                  className="cursor-pointer rounded-xl border-2 border-blue-950 bg-blue-950 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:border-black hover:bg-black"
+                >
+                  Continue to sign in
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </div>
     </div>
   );

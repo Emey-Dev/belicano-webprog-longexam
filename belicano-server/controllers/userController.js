@@ -7,7 +7,11 @@ const { HttpStatus } = require("../config/constants");
 const createToken = (user) => {
   if (!SECRET_KEY)
     throw new Error("JWT_SECRET is missing from the server .env file.");
-  return jwt.sign({ userId: user._id, userRole: user.userRole }, SECRET_KEY, {
+  return jwt.sign({
+    userId: user._id,
+    userRole: user.userRole,
+    sessionVersion: user.sessionVersion || 0,
+  }, SECRET_KEY, {
     expiresIn: "7d",
   });
 };
@@ -147,6 +151,8 @@ const loginUser = async (req, res) => {
       return res
         .status(HttpStatus.UNAUTHORIZED)
         .json({ message: "Invalid username or password." });
+    user.sessionVersion = (user.sessionVersion || 0) + 1;
+    await user.save();
     await linkSupplierByEmail(user);
     res.json({
       user: userData(user),
@@ -189,6 +195,7 @@ const updateUser = async (req, res) => {
     delete updates.supplierId;
     delete updates.isActive;
     delete updates.passwordHash;
+    delete updates.email;
     const user = await User.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
@@ -215,6 +222,25 @@ const changePassword = async (req, res) => {
         .status(HttpStatus.BAD_REQUEST)
         .json({ message: "Current password is incorrect." });
     user.passwordHash = newPassword;
+    user.sessionVersion = (user.sessionVersion || 0) + 1;
+    await user.save();
+    res.json({ message: "Password changed successfully." });
+  } catch (error) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
+  }
+};
+const forgotPassword = async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      "+passwordHash",
+    );
+    if (!user || !(await user.comparePassword(currentPassword)))
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: "Email or current password is incorrect." });
+    user.passwordHash = newPassword;
+    user.sessionVersion = (user.sessionVersion || 0) + 1;
     await user.save();
     res.json({ message: "Password changed successfully." });
   } catch (error) {
@@ -290,6 +316,7 @@ module.exports = {
   getUser,
   updateUser,
   changePassword,
+  forgotPassword,
   adminUpdateUser,
   deleteUser,
 };

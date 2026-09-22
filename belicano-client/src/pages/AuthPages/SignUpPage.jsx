@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth.js";
 import Button from "../../components/Button";
@@ -11,6 +11,12 @@ const actionButtonClassName =
   "w-full rounded-xl py-3 text-[11px] tracking-[0.2em] bg-blue-950 text-white hover:bg-black hover:border-black";
 const philippineMobilePattern = /^\+639\d{9}$/;
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+const formatCountdown = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
+};
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -27,6 +33,22 @@ const SignUpPage = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(0);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  useEffect(() => {
+    if (!retryAfterSeconds) return undefined;
+    const timer = window.setInterval(() => {
+      setRetryAfterSeconds((seconds) => Math.max(seconds - 1, 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [retryAfterSeconds]);
+
+  useEffect(() => {
+    if (retryAfterSeconds === 0 && isRateLimited) {
+      setError("");
+      setIsRateLimited(false);
+    }
+  }, [retryAfterSeconds, isRateLimited]);
   const updateField = (field) => (event) =>
     setForm({ ...form, [field]: event.target.value });
   const updateContactNumber = (event) => {
@@ -52,6 +74,7 @@ const SignUpPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setIsRateLimited(false);
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
@@ -66,6 +89,14 @@ const SignUpPage = () => {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (response.status === 429) {
+          const retryAfter = Number(data.retryAfterSeconds || response.headers.get("Retry-After") || 0);
+          setRetryAfterSeconds(retryAfter);
+          setIsRateLimited(true);
+          throw new Error(
+            `Too many failed registration attempts (${data.failedAttempts || "multiple"}). Please wait before trying again.`,
+          );
+        }
         throw new Error(
           response.status === 400
             ? data.message || "Please check your details and try again."
@@ -231,18 +262,22 @@ const SignUpPage = () => {
             </p>
           </div>
 
-          {error && (
-            <p
-              role="alert"
-              className="border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700"
-            >
-              {error}
-            </p>
-          )}
+          <div className="min-h-5">
+            {error && (
+              <p
+                role="alert"
+                aria-live="polite"
+                className="border-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
+                {error}
+                {isRateLimited && ` Time remaining: ${formatCountdown(retryAfterSeconds)}.`}
+              </p>
+            )}
+          </div>
           <Button
             type="submit"
             className={actionButtonClassName}
-            disabled={isSubmitting}
+            disabled={isSubmitting || retryAfterSeconds > 0}
           >
             {isSubmitting ? "Creating Account..." : "Create Account"}
           </Button>

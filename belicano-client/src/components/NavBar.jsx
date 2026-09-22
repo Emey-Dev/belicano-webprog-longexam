@@ -51,6 +51,13 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const ProfileIcon = () => (
+  <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="8" r="3.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 20c.8-3.2 3.2-5 7-5s6.2 1.8 7 5" />
+  </svg>
+);
+
 const SignInIcon = () => (
   <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M10 17l5-5-5-5M15 12H3m9-8h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6" />
@@ -70,11 +77,19 @@ const SupplierIcon = () => (
 );
 
 const NavBar = () => {
-  const { user, token, logout, updateUser } = useAuth();
+  const {
+    user,
+    token,
+    logout,
+    updateUser,
+    sessionEndedReason,
+    clearSessionEndedReason,
+  } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
   const [showDeactivationPrompt, setShowDeactivationPrompt] = useState(false);
+  const [showSessionPrompt, setShowSessionPrompt] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [orderCount, setOrderCount] = useState(0);
   const userId = user?._id;
@@ -90,11 +105,24 @@ const NavBar = () => {
     logout();
     navigate("/");
   };
+  const handleSessionPromptClose = () => {
+    setShowSessionPrompt(false);
+    logout();
+    clearSessionEndedReason();
+    navigate("/auth/signin");
+  };
+  useEffect(() => {
+    if (sessionEndedReason === "inactivity") setShowSessionPrompt(true);
+  }, [sessionEndedReason]);
   useEffect(() => {
     if (!userId || !token) return undefined;
     const checkAccountStatus = async () => {
       const response = await fetch(apiUrl(`user/${userId}`), { headers: authHeaders(token) });
       if (response.status === 403) setShowDeactivationPrompt(true);
+      else if (response.status === 401) {
+        logout();
+        setShowSessionPrompt(true);
+      }
       else if (response.ok) updateUser(await response.json());
     };
     void checkAccountStatus().catch(() => {});
@@ -219,7 +247,16 @@ const NavBar = () => {
                 <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider">Manage supplies</span>
               </NavLink>
             )}
-            <div className="ml-2 flex items-center gap-4 border-l-2 border-yellow-500 pl-4 text-right text-yellow-200">
+            <div className="ml-auto flex items-center gap-4 border-l-2 border-yellow-500 pl-4 text-right text-yellow-200">
+              <NavLink
+                to="/profile"
+                aria-label="My profile"
+                title="My profile"
+                className={navLinkClassName({ isActive: location.pathname === "/profile" })}
+              >
+                <ProfileIcon />
+                <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider">Profile</span>
+              </NavLink>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em]">
                   {user.userRole === "admin" ? "Admin" : user.userRole === "supplier" ? "Supplier" : "Customer"}
@@ -296,6 +333,20 @@ const NavBar = () => {
             <p className="mt-3 text-sm leading-6 text-zinc-600">This account can no longer access BulldogEx. Please contact the administrator for assistance.</p>
             <div className="mt-6 flex justify-end">
               <button type="button" onClick={handleDeactivationLogout} className="cursor-pointer rounded-xl border-2 border-blue-950 bg-blue-950 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white">Return to sign in</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {showSessionPrompt && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-blue-950/70 px-4 py-6" role="presentation">
+          <section className="w-full max-w-md border-2 border-zinc-900 bg-zinc-50 p-6 text-zinc-900 shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="session-prompt-title">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">Session status</p>
+            <h2 id="session-prompt-title" className="mt-2 text-2xl font-bold text-blue-950">Your session has ended</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-600">For your security, you were signed out after 10 minutes of inactivity or because this account was signed in elsewhere.</p>
+            <div className="mt-6 flex justify-end">
+              <button type="button" onClick={handleSessionPromptClose} className="cursor-pointer rounded-xl border-2 border-blue-950 bg-blue-950 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:border-black hover:bg-black">
+                Return to sign in
+              </button>
             </div>
           </section>
         </div>

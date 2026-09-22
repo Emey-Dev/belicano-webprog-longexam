@@ -54,7 +54,9 @@ function ProductPage() {
   useEffect(() => {
     const loadReviews = async () => {
       if (!product?._id) return setReviews([]);
-      const response = await fetch(apiUrl(`review?productId=${product._id}`));
+      const response = await fetch(apiUrl(`review?productId=${product._id}`), {
+        headers: { 'X-Audit-Action': 'true' },
+      });
       if (response.ok) {
         setReviews(await response.json());
         setReviewPage(1);
