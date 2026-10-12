@@ -23,6 +23,7 @@ const productSchema = new mongoose.Schema(
       default: null,
     },
     productImage: { type: String, trim: true, default: "" },
+    productImagePublicId: { type: String, trim: true, default: "" },
     stockQuantity: { type: Number, required: true, min: 0, default: 0 },
     stockStatus: {
       type: String,

@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import AuthContext from "./AuthContext.jsx";
 export const useAuth = () => useContext(AuthContext);
-export const authHeaders = (token) => ({
+export const authHeaders = (token, includeJsonContentType = true) => ({
   ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  "Content-Type": "application/json",
+  ...(includeJsonContentType ? { "Content-Type": "application/json" } : {}),
 });

@@ -5,6 +5,7 @@ import { paginate } from "../../utils/pagination.js";
 import { authHeaders, useAuth } from "../../context/useAuth.js";
 import { apiUrl } from "../../config/api.js";
 import { resolveProductImage } from "../../utils/productImage.js";
+import ProductImageUpload from "../../components/ProductImageUpload.jsx";
 
 const tabs = ["Overview", "Products", "Orders", "Reviews", "Categories"];
 const input =
@@ -43,6 +44,7 @@ export default function SupplierPage() {
   const [reviews, setReviews] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [imageFile, setImageFile] = useState(null);
   const [editId, setEditId] = useState("");
   const [message, setMessage] = useState("");
   const [productSearch, setProductSearch] = useState("");
@@ -107,19 +109,24 @@ export default function SupplierPage() {
   const saveProduct = async (event) => {
     event.preventDefault();
     try {
+      const body = new FormData();
+      Object.entries({
+        ...form,
+        productPrice: Number(form.productPrice),
+        stockQuantity: Number(form.stockQuantity),
+      }).forEach(([key, value]) => body.append(key, String(value ?? "")));
+      if (imageFile) body.append("image", imageFile);
+
       const response = await fetch(editId ? apiUrl(`products/${editId}`) : apiUrl("products"), {
         method: editId ? "PUT" : "POST",
-        headers,
-        body: JSON.stringify({
-          ...form,
-          productPrice: Number(form.productPrice),
-          stockQuantity: Number(form.stockQuantity),
-        }),
+        headers: authHeaders(token, false),
+        body,
       });
       const data = await response.json();
       if (!response.ok) throw Error(data.message);
       flash(editId ? "Product updated." : "Product created.");
       setForm(emptyForm);
+      setImageFile(null);
       setEditId("");
       await load();
     } catch (error) {
@@ -213,7 +220,7 @@ export default function SupplierPage() {
         {tab === "Products" && (
           <section className="mt-6 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
             <form onSubmit={saveProduct} className="rounded-3xl border-2 border-zinc-900 bg-white p-5">
-              <div className="flex justify-between"><h2 className="text-xl font-bold">{editId ? "Edit product" : "Create product"}</h2>{editId && <button type="button" onClick={() => { setEditId(""); setForm(emptyForm); }} className="text-sm underline">Cancel</button>}</div>
+              <div className="flex justify-between"><h2 className="text-xl font-bold">{editId ? "Edit product" : "Create product"}</h2>{editId && <button type="button" onClick={() => { setEditId(""); setForm(emptyForm); setImageFile(null); }} className="text-sm underline">Cancel</button>}</div>
               <div className="mt-4 grid gap-3">
                 {!editId && <p className="text-sm text-zinc-600">Add a product to your supplier catalog.</p>}
                 <label className="grid gap-1 text-sm font-semibold text-zinc-700">Product name<input className={input} value={form.productName} onChange={(e) => setForm({ ...form, productName: e.target.value })} required /></label>
@@ -224,7 +231,7 @@ export default function SupplierPage() {
                   <label className="grid gap-1 text-sm font-semibold text-zinc-700">Stock quantity<input className={input} type="number" min="0" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} required /></label>
                 </div>
                 <label className="grid gap-1 text-sm font-semibold text-zinc-700">Category<select className={selectInput} value={form.categoryId || ""} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} required><option value="">Select category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.categoryName}</option>)}</select></label>
-                <label className="grid gap-1 text-sm font-semibold text-zinc-700">Product image filename<input className={input} value={form.productImage} onChange={(e) => setForm({ ...form, productImage: e.target.value })} /></label>
+                <ProductImageUpload key={editId || "new"} value={form.productImage} file={imageFile} onChange={setImageFile} />
                 <label className="grid gap-1 text-sm font-semibold text-zinc-700">Stock status<select className={selectInput} value={form.stockStatus} onChange={(e) => setForm({ ...form, stockStatus: e.target.value })}>{["In stock", "Low stock", "Out of stock", "Preorder"].map((item) => <option key={item}>{item}</option>)}</select></label>
                 <button className="cursor-pointer rounded-full bg-blue-950 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-black hover:shadow-lg">{editId ? "Save changes" : "Create product"}</button>
               </div>
@@ -237,7 +244,7 @@ export default function SupplierPage() {
                  {showInactiveProducts ? "Show active" : "Show disabled"}
                </button>
               </div>
-              {pagedProducts.items.map((product) => <article key={product._id} className="flex items-center justify-between gap-4 rounded-2xl border-2 border-zinc-900 bg-white p-4"><div className="flex min-w-0 items-center gap-4"><div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 p-2">{resolveProductImage(product.productImage) ? <img src={resolveProductImage(product.productImage)} alt={product.productName} className="h-full w-full object-contain" /> : <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400">No image</span>}</div><div><h3 className="font-bold">{product.productName}</h3><p className="text-sm text-zinc-600">PHP {product.productPrice} · {product.stockQuantity} available</p><p className="mt-1 text-xs font-bold uppercase tracking-wider text-zinc-500">{product.isActive === false ? "Disabled" : "Active"}</p></div></div><div className="flex gap-2"><button onClick={() => { setEditId(product._id); setForm({ productName: product.productName || "", productSlug: product.productSlug || "", productDescription: product.productDescription || "", productPrice: product.productPrice ?? "", stockQuantity: product.stockQuantity ?? "", stockStatus: product.stockStatus || "In stock", productImage: product.productImage || "", categoryId: product.categoryId?._id || product.categoryId || "", isActive: product.isActive !== false }); }} className="cursor-pointer rounded-full border-2 border-blue-950 px-4 py-2 text-xs font-bold uppercase">Edit</button><button onClick={() => toggleProduct(product)} className="cursor-pointer rounded-full border-2 border-blue-950 px-3 py-2 text-xs font-bold uppercase">{product.isActive === false ? "Enable" : "Disable"}</button></div></article>)}
+              {pagedProducts.items.map((product) => <article key={product._id} className="flex items-center justify-between gap-4 rounded-2xl border-2 border-zinc-900 bg-white p-4"><div className="flex min-w-0 items-center gap-4"><div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 p-2">{resolveProductImage(product.productImage) ? <img src={resolveProductImage(product.productImage)} alt={product.productName} className="h-full w-full object-contain" /> : <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400">No image</span>}</div><div><h3 className="font-bold">{product.productName}</h3><p className="text-sm text-zinc-600">PHP {product.productPrice} · {product.stockQuantity} available</p><p className="mt-1 text-xs font-bold uppercase tracking-wider text-zinc-500">{product.isActive === false ? "Disabled" : "Active"}</p></div></div><div className="flex gap-2"><button onClick={() => { setEditId(product._id); setImageFile(null); setForm({ productName: product.productName || "", productSlug: product.productSlug || "", productDescription: product.productDescription || "", productPrice: product.productPrice ?? "", stockQuantity: product.stockQuantity ?? "", stockStatus: product.stockStatus || "In stock", productImage: product.productImage || "", categoryId: product.categoryId?._id || product.categoryId || "", isActive: product.isActive !== false }); }} className="cursor-pointer rounded-full border-2 border-blue-950 px-4 py-2 text-xs font-bold uppercase">Edit</button><button onClick={() => toggleProduct(product)} className="cursor-pointer rounded-full border-2 border-blue-950 px-3 py-2 text-xs font-bold uppercase">{product.isActive === false ? "Enable" : "Disable"}</button></div></article>)}
               <Pagination page={pagedProducts.current} pageCount={pagedProducts.pageCount} onPageChange={setProductPage} />
             </div>
           </section>

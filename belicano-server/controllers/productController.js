@@ -3,6 +3,22 @@ const Category = require("../models/categoryModel");
 const Supplier = require("../models/supplierModel");
 const Order = require("../models/orderModel");
 const { HttpStatus } = require("../config/constants");
+const cloudinary = require("../config/cloudinary");
+
+const uploadImageToCloudinary = (file) =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "bulldogs-exchange/products" },
+      (error, result) => {
+        if (error) {
+          error.statusCode = HttpStatus.BAD_GATEWAY;
+          return reject(error);
+        }
+        resolve(result);
+      },
+    );
+    stream.end(file.buffer);
+  });
 
 const isV1Request = (req) => req.baseUrl.startsWith("/api/v1/");
 
@@ -151,6 +167,11 @@ const createProduct = async (req, res) => {
         return res.status(HttpStatus.FORBIDDEN).json({ message: "Your account is not linked to a supplier record." });
       productData.supplierId = req.user.supplierId;
     }
+    if (req.file) {
+      const image = await uploadImageToCloudinary(req.file);
+      productData.productImage = image.secure_url;
+      productData.productImagePublicId = image.public_id;
+    }
     const product = await Product.create(productData);
     if (isV1Request(req)) {
       const data = await populateProduct(Product.findById(product._id), true);
@@ -163,9 +184,10 @@ const createProduct = async (req, res) => {
     }
     res.status(HttpStatus.CREATED).json(product);
   } catch (error) {
+    const status = error.statusCode || HttpStatus.BAD_REQUEST;
     if (isV1Request(req))
-      return sendV1Response(res, HttpStatus.BAD_REQUEST, error.message);
-    res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
+      return sendV1Response(res, status, error.message);
+    res.status(status).json({ message: error.message });
   }
 };
 const updateProduct = async (req, res) => {
@@ -180,10 +202,7 @@ const updateProduct = async (req, res) => {
       : { _id: req.params.id };
     const updates = { ...req.body };
     if (req.user.userRole === "supplier") delete updates.supplierId;
-    const product = await Product.findOneAndUpdate(filter, updates, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await Product.findOne(filter);
     if (!product) {
       if (versionOne)
         return sendV1Response(res, HttpStatus.NOT_FOUND, "Product not found.");
@@ -191,6 +210,13 @@ const updateProduct = async (req, res) => {
         .status(HttpStatus.NOT_FOUND)
         .json({ message: "Product not found." });
     }
+    if (req.file) {
+      const image = await uploadImageToCloudinary(req.file);
+      updates.productImage = image.secure_url;
+      updates.productImagePublicId = image.public_id;
+    }
+    Object.assign(product, updates);
+    await product.save();
     if (versionOne) {
       const data = await populateProduct(Product.findById(product._id), true);
       return sendV1Response(
@@ -202,9 +228,10 @@ const updateProduct = async (req, res) => {
     }
     res.json(product);
   } catch (error) {
+    const status = error.statusCode || HttpStatus.BAD_REQUEST;
     if (isV1Request(req))
-      return sendV1Response(res, HttpStatus.BAD_REQUEST, error.message);
-    res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
+      return sendV1Response(res, status, error.message);
+    res.status(status).json({ message: error.message });
   }
 };
 const deleteProduct = async (req, res) => {
@@ -232,6 +259,48 @@ const deleteProduct = async (req, res) => {
     res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
   }
 };
+const uploadProductImage = async (req, res) => {
+  if (!req.file)
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message: "Product image is required.",
+    });
+
+  try {
+    if (req.user.userRole === "supplier" && !req.user.supplierId)
+      return res.status(HttpStatus.FORBIDDEN).json({
+        success: false,
+        message: "Your account is not linked to a supplier record.",
+      });
+
+    const filter = req.user.userRole === "supplier"
+      ? { _id: req.params.id, supplierId: req.user.supplierId }
+      : { _id: req.params.id };
+    const product = await Product.findOne(filter);
+    if (!product)
+      return res.status(HttpStatus.NOT_FOUND).json({
+        success: false,
+        message: "Product not found.",
+      });
+
+    const result = await uploadImageToCloudinary(req.file);
+    product.productImage = result.secure_url;
+    product.productImagePublicId = result.public_id;
+    await product.save();
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      imageUrl: result.secure_url,
+      publicId: result.public_id,
+      productId: product._id,
+    });
+  } catch (error) {
+    res.status(error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   getProducts,
   getAdminProducts,
@@ -240,4 +309,5 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  uploadProductImage,
 };

@@ -5,6 +5,7 @@ import { paginate } from "../../utils/pagination.js";
 import { authHeaders, useAuth } from "../../context/useAuth.js";
 import { apiUrl } from "../../config/api.js";
 import { resolveProductImage } from "../../utils/productImage.js";
+import ProductImageUpload from "../../components/ProductImageUpload.jsx";
 
 const tabs = ["Overview", "Products", "Orders", "Reviews", "Categories", "Users"];
 const blank = {
@@ -54,6 +55,7 @@ export default function AdminPage() {
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [form, setForm] = useState(blank);
+  const [imageFile, setImageFile] = useState(null);
   const [editId, setEditId] = useState("");
   const [message, setMessage] = useState("");
   const [categoryForm, setCategoryForm] = useState({ categoryName: "", categoryDescription: "" });
@@ -158,17 +160,27 @@ export default function AdminPage() {
   const saveProduct = async (event) => {
     event.preventDefault();
     try {
-      await api(
-        editId ? `products/${editId}` : "products",
-        editId ? "PUT" : "POST",
+      const body = new FormData();
+      Object.entries({
+        ...form,
+        productPrice: Number(form.productPrice),
+        stockQuantity: Number(form.stockQuantity),
+      }).forEach(([key, value]) => body.append(key, String(value ?? "")));
+      if (imageFile) body.append("image", imageFile);
+
+      const response = await fetch(
+        apiUrl(editId ? `products/${editId}` : "products"),
         {
-          ...form,
-          productPrice: Number(form.productPrice),
-          stockQuantity: Number(form.stockQuantity),
+          method: editId ? "PUT" : "POST",
+          headers: authHeaders(token, false),
+          body,
         },
       );
+      const result = await response.json();
+      if (!response.ok) throw Error(result.message || "Unable to save product.");
       flash(editId ? "Product updated." : "Product created.");
       setForm(blank);
+      setImageFile(null);
       setEditId("");
       load();
     } catch (error) {
@@ -415,6 +427,7 @@ export default function AdminPage() {
                     onClick={() => {
                       setEditId("");
                       setForm(blank);
+                      setImageFile(null);
                     }}
                     className="text-sm underline"
                   >
@@ -489,17 +502,12 @@ export default function AdminPage() {
                     />
                   </label>
                 </div>
-                <label className="grid gap-1 text-sm font-semibold text-zinc-700">
-                  Product image filename
-                  <input
-                    className={input}
-                    placeholder="product-image.jpg"
-                    value={form.productImage}
-                    onChange={(e) =>
-                      setForm({ ...form, productImage: e.target.value })
-                    }
-                  />
-                </label>
+                <ProductImageUpload
+                  key={editId || "new"}
+                  value={form.productImage}
+                  file={imageFile}
+                  onChange={setImageFile}
+                />
                 <label className="grid gap-1 text-sm font-semibold text-zinc-700">
                   Category
                   <select
@@ -605,6 +613,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => {
                         setEditId(item._id);
+                        setImageFile(null);
                         setForm({
                           ...blank,
                           ...item,

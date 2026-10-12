@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const multer = require("multer");
 const connectDB = require("./config/db");
 const { PORT } = require("./config/config");
 const { HttpStatus } = require("./config/constants");
@@ -177,6 +178,15 @@ app.get("/api/v1/stats", ...adminOnly, getStats);
 app.get("/api/v1/public-stats", getPublicStats);
 
 app.use((err, _req, res, _next) => {
+  if (err instanceof multer.MulterError) {
+    const fileTooLarge = err.code === "LIMIT_FILE_SIZE";
+    return res.status(fileTooLarge ? 413 : 400).json({
+      success: false,
+      message: fileTooLarge
+        ? "Image must be 5 MB or smaller."
+        : "The image upload could not be processed.",
+    });
+  }
   console.error(err);
   res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
     message: "Internal server error.",
